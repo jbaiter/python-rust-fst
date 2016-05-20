@@ -1,0 +1,13 @@
+[package]
+
+name = "playground"
+version = "0.0.1"
+authors = ["Johannes Baiter <johannes.baiter@gmail.com>"]
+
+[lib]
+name = "playground"
+crate-type = ["dylib"]
+
+[dependencies]
+libc = "0.2"
+fst = "0.1"
