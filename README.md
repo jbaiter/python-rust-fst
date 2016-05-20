@@ -1,9 +1,9 @@
 # python-rust-fst
 
-Python bindings for [burntsushi's][1] [fst crate][2][3] for FST-backed sets and
-maps.
+Python bindings for [burntsushi's][1] [fst crate][2] ([rustdocs][3])
+for FST-backed sets and maps.
 
-Currently only `Set`s and their `search` and `contains` functions are
+Currently only `Set` and its `search` and `contains` functions are
 implemented, more is to come.
 
 For reasons why you might want to consider using it, see BurntSushi's great
