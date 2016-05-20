@@ -54,8 +54,7 @@ class FstSet:
         lib.fst_stream_free(stream_ptr)
 
     def __len__(self):
-        # TODO
-        raise NotImplementedError
+        return lib.fst_set_len(self._ptr)
 
     def union(self, *others):
         # TODO
@@ -74,16 +73,13 @@ class FstSet:
         raise NotImplementedError
 
     def issubset(self, other):
-        # TODO
-        raise NotImplementedError
+        return bool(lib.fst_set_issubset(self._ptr, other._ptr))
 
     def issuperset(self, other):
-        # TODO
-        raise NotImplementedError
+        return bool(lib.fst_set_issuperset(self._ptr, other._ptr))
 
     def isdisjoint(self, other):
-        # TODO
-        raise NotImplementedError
+        return bool(lib.fst_set_isdisjoint(self._ptr, other._ptr))
 
     def search(self, term, max_dist):
         """ Search the set with a Levenshtein automaton.

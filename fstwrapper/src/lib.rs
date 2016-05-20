@@ -93,6 +93,33 @@ pub extern fn fst_set_stream(ptr: *mut Set) -> *mut Stream<'static> {
 }
 
 #[no_mangle]
+pub extern fn fst_set_len(ptr: *mut Set) -> libc::size_t {
+    let set = mutref_from_ptr!(ptr);
+    set.len()
+}
+
+#[no_mangle]
+pub extern fn fst_set_isdisjoint(self_ptr: *mut Set, oth_ptr: *mut Set) -> bool {
+    let slf = ref_from_ptr!(self_ptr);
+    let oth = ref_from_ptr!(oth_ptr);
+    slf.is_disjoint(oth)
+}
+
+#[no_mangle]
+pub extern fn fst_set_issubset(self_ptr: *mut Set, oth_ptr: *mut Set) -> bool {
+    let slf = ref_from_ptr!(self_ptr);
+    let oth = ref_from_ptr!(oth_ptr);
+    slf.is_subset(oth)
+}
+
+#[no_mangle]
+pub extern fn fst_set_issuperset(self_ptr: *mut Set, oth_ptr: *mut Set) -> bool {
+    let slf = ref_from_ptr!(self_ptr);
+    let oth = ref_from_ptr!(oth_ptr);
+    slf.is_superset(oth)
+}
+
+#[no_mangle]
 pub extern fn fst_stream_next(ptr: *mut Stream) -> *const libc::c_char {
     let stream = mutref_from_ptr!(ptr);
     match stream.next() {

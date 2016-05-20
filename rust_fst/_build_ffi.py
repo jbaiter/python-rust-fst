@@ -21,6 +21,10 @@ ffi.cdef("""
 
     Set* fst_set_open(char*);
     bool fst_set_contains(Set*, char*);
+    size_t fst_set_len(Set*);
+    bool fst_set_isdisjoint(Set*, Set*);
+    bool fst_set_issubset(Set*, Set*);
+    bool fst_set_issuperset(Set*, Set*);
     Stream* fst_set_stream(Set*);
     LevStream* fst_set_search(Set*, Levenshtein*);
     void fst_set_free(Set*);
