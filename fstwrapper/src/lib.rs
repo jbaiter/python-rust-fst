@@ -12,6 +12,20 @@ use fst::set::Stream;
 
 pub type FileSetBuilder = SetBuilder<&'static mut io::BufWriter<File>>;
 
+macro_rules! ref_from_ptr {
+    ($p:ident) => (unsafe {
+        assert!(!$p.is_null());
+        &*$p
+    })
+}
+
+macro_rules! mutref_from_ptr {
+    ($p:ident) => (unsafe {
+        assert!(!$p.is_null());
+        &mut *$p
+    })
+}
+
 fn cstr_to_str<'a>(s: *mut libc::c_char) -> &'a str {
     let cstr = unsafe { CStr::from_ptr(s) };
     cstr.to_str().unwrap()
@@ -35,20 +49,14 @@ pub extern fn bufwriter_free(ptr: *mut io::BufWriter<File>) {
 
 #[no_mangle]
 pub extern fn fst_setbuilder_new(wtr_ptr: *mut io::BufWriter<File>) -> *mut FileSetBuilder {
-    let wtr = unsafe {
-        assert!(!wtr_ptr.is_null());
-        &mut *wtr_ptr
-    };
+    let wtr = mutref_from_ptr!(wtr_ptr);
     let build = SetBuilder::new(wtr).unwrap();
     Box::into_raw(Box::new(build))
 }
 
 #[no_mangle]
 pub extern fn fst_setbuilder_insert(ptr: *mut FileSetBuilder, s: *mut libc::c_char) {
-    let build = unsafe {
-        assert!(!ptr.is_null());
-        &mut *ptr
-    };
+    let build = mutref_from_ptr!(ptr);
     build.insert(cstr_to_str(s)).unwrap();
 }
 
@@ -74,28 +82,19 @@ pub extern fn fst_set_free(ptr: *mut Set) {
 
 #[no_mangle]
 pub extern fn fst_set_contains(ptr: *mut Set, s: *mut libc::c_char) -> bool {
-    let set = unsafe {
-        assert!(!ptr.is_null());
-        &mut *ptr
-    };
+    let set = mutref_from_ptr!(ptr);
     set.contains(cstr_to_str(s))
 }
 
 #[no_mangle]
 pub extern fn fst_set_stream(ptr: *mut Set) -> *mut Stream<'static> {
-    let set = unsafe {
-        assert!(!ptr.is_null());
-        &mut *ptr
-    };
+    let set = mutref_from_ptr!(ptr);
     Box::into_raw(Box::new(set.stream()))
 }
 
 #[no_mangle]
 pub extern fn fst_stream_next(ptr: *mut Stream) -> *const libc::c_char {
-    let stream = unsafe {
-        assert!(!ptr.is_null());
-        &mut *ptr
-    };
+    let stream = mutref_from_ptr!(ptr);
     match stream.next() {
         Some(val) => CString::new(val).unwrap().into_raw(),
         None      => ptr::null()
@@ -122,14 +121,8 @@ pub extern fn levenshtein_free(ptr: *mut Levenshtein) {
 #[no_mangle]
 pub extern fn fst_set_search(set_ptr: *mut Set,
                              lev_ptr: *mut Levenshtein) -> *mut Stream<'static, &'static Levenshtein> {
-    let set = unsafe {
-        assert!(!set_ptr.is_null());
-        &mut *set_ptr
-    };
-    let lev = unsafe {
-        assert!(!lev_ptr.is_null());
-        &*lev_ptr
-    };
+    let set = mutref_from_ptr!(set_ptr);
+    let lev = ref_from_ptr!(lev_ptr);
     let sb = set.search(lev);
     Box::into_raw(Box::new(sb.into_stream()))
 }
@@ -137,10 +130,7 @@ pub extern fn fst_set_search(set_ptr: *mut Set,
 
 #[no_mangle]
 pub extern fn lev_stream_next(ptr: *mut Stream<&Levenshtein>) -> *const libc::c_char {
-    let stream = unsafe {
-        assert!(!ptr.is_null());
-        &mut *ptr
-    };
+    let stream = mutref_from_ptr!(ptr);
     match stream.next() {
         Some(val) => CString::new(val).unwrap().into_raw(),
         None      => ptr::null()
