@@ -1,11 +1,11 @@
 [package]
 
-name = "playground"
+name = "fst-wrapper"
 version = "0.0.1"
 authors = ["Johannes Baiter <johannes.baiter@gmail.com>"]
 
 [lib]
-name = "playground"
+name = "fstwrapper"
 crate-type = ["dylib"]
 
 [dependencies]
