@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+""" Code by Armin Ronacher.
+
+https://github.com/mitsuhiko/rust-setuptools
+"""
 import os
 import sys
 import shutil
