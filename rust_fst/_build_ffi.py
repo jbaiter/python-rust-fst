@@ -37,17 +37,17 @@ ffi.cdef("""
     bool fst_set_issubset(Set*, Set*);
     bool fst_set_issuperset(Set*, Set*);
     Stream* fst_set_stream(Set*);
-    LevStream* fst_set_search(Set*, Levenshtein*);
+    LevStream* fst_set_levsearch(Set*, Levenshtein*);
     void fst_set_free(Set*);
 
-    char* fst_stream_next(Stream*);
-    void fst_stream_free(Stream*);
+    char* fst_setstream_next(Stream*);
+    void fst_setstream_free(Stream*);
 
-    char* lev_stream_next(LevStream*);
-    void lev_stream_free(LevStream*);
+    char* fst_levstream_next(LevStream*);
+    void fst_levstream_free(LevStream*);
 
-    Levenshtein* levenshtein_new(Context*, char*, uint32_t);
-    void levenshtein_free(Levenshtein*);
+    Levenshtein* fst_levenshtein_new(Context*, char*, uint32_t);
+    void fst_levenshtein_free(Levenshtein*);
 """)
 
 if __name__ == '__main__':

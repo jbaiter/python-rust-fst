@@ -161,7 +161,7 @@ pub extern fn fst_set_stream(ptr: *mut Set) -> *mut Stream<'static> {
     let set = mutref_from_ptr!(ptr);
     to_raw_ptr!(set.stream())
 }
-make_free_fn!(fst_set_stream_free, *mut Stream);
+make_free_fn!(fst_setstream_free, *mut Stream);
 
 #[no_mangle]
 pub extern fn fst_set_len(ptr: *mut Set) -> libc::size_t {
@@ -191,7 +191,7 @@ pub extern fn fst_set_issuperset(self_ptr: *mut Set, oth_ptr: *mut Set) -> bool 
 }
 
 #[no_mangle]
-pub extern fn fst_stream_next(ptr: *mut Stream) -> *const libc::c_char {
+pub extern fn fst_setstream_next(ptr: *mut Stream) -> *const libc::c_char {
     let stream = mutref_from_ptr!(ptr);
     match stream.next() {
         Some(val) => CString::new(val).unwrap().into_raw(),
@@ -200,10 +200,10 @@ pub extern fn fst_stream_next(ptr: *mut Stream) -> *const libc::c_char {
 }
 
 #[no_mangle]
-pub extern fn levenshtein_new(ctx: *mut Context,
-                              c_key: *mut libc::c_char,
-                              max_dist: libc::uint32_t)
-                              -> *mut Levenshtein {
+pub extern fn fst_levenshtein_new(ctx: *mut Context,
+                                  c_key: *mut libc::c_char,
+                                  max_dist: libc::uint32_t)
+                                  -> *mut Levenshtein {
     let key = cstr_to_str(c_key);
     let lev = with_context!(ctx, ptr::null_mut(),
                             Levenshtein::new(key, max_dist));
@@ -212,17 +212,17 @@ pub extern fn levenshtein_new(ctx: *mut Context,
 make_free_fn!(fst_levenshtein_free, *mut Levenshtein);
 
 #[no_mangle]
-pub extern fn fst_set_search(set_ptr: *mut Set,
+pub extern fn fst_set_levsearch(set_ptr: *mut Set,
                              lev_ptr: *mut Levenshtein) -> *mut Stream<'static, &'static Levenshtein> {
     let set = mutref_from_ptr!(set_ptr);
     let lev = ref_from_ptr!(lev_ptr);
     to_raw_ptr!(set.search(lev).into_stream())
 }
-make_free_fn!(fst_lev_stream_free, *mut Stream<&Levenshtein>);
+make_free_fn!(fst_levstream_free, *mut Stream<&Levenshtein>);
 
 
 #[no_mangle]
-pub extern fn lev_stream_next(ptr: *mut Stream<&Levenshtein>) -> *const libc::c_char {
+pub extern fn fst_levstream_next(ptr: *mut Stream<&Levenshtein>) -> *const libc::c_char {
     let stream = mutref_from_ptr!(ptr);
     match stream.next() {
         Some(val) => CString::new(val).unwrap().into_raw(),

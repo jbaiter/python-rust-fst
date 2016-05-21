@@ -39,7 +39,7 @@ class FstSet:
     def __init__(self, path):
         """ Load an FST set from a given file. """
         self._ctx = ffi.gc(lib.context_new(), lib.context_free)
-        s = checked_call(lib.fst_set_open, ctx,
+        s = checked_call(lib.fst_set_open, self._ctx,
                          ffi.new("char[]", path.encode('utf8')))
         self._ptr = ffi.gc(s, lib.fst_set_free)
 
@@ -50,12 +50,12 @@ class FstSet:
     def __iter__(self):
         stream_ptr = lib.fst_set_stream(self._ptr)
         while True:
-            c_str = lib.fst_stream_next(stream_ptr)
+            c_str = lib.fst_setstream_next(stream_ptr)
             if c_str == ffi.NULL:
                 break
             yield ffi.string(c_str).decode('utf8')
             lib.string_free(c_str)
-        lib.fst_stream_free(stream_ptr)
+        lib.fst_setstream_free(stream_ptr)
 
     def __len__(self):
         return lib.fst_set_len(self._ptr)
@@ -94,15 +94,14 @@ class FstSet:
         :rtype:             generator that yields str
         """
         lev_ptr = checked_call(
-            self._ctx,
-            lib.levenshtein_new(ffi.new("char[]", term.encode('utf8')),
-                                max_dist))
-        stream_ptr = lib.fst_set_search(self._ptr, lev_ptr)
+            lib.fst_levenshtein_new, self._ctx,
+            ffi.new("char[]", term.encode('utf8')), max_dist)
+        stream_ptr = lib.fst_set_levsearch(self._ptr, lev_ptr)
         while True:
-            c_str = lib.lev_stream_next(stream_ptr)
+            c_str = lib.fst_levstream_next(stream_ptr)
             if c_str == ffi.NULL:
                 break
             yield ffi.string(c_str).decode('utf8')
             lib.string_free(c_str)
-        lib.lev_stream_free(stream_ptr)
-        lib.levenshtein_free(lev_ptr)
+        lib.fst_levstream_free(stream_ptr)
+        lib.fst_levenshtein_free(lev_ptr)
