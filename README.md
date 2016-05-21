@@ -14,7 +14,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 
 ## Installation
 - You will need:
-    * Python 3 with development headers installed
+    * Python >= 3.3, Python or PyPy >= 2.7 with development headers installed
     * Rust nightly (install via [rustup][5])
 - Clone the repository. Installation with `pip install git+...` does not work
   currently

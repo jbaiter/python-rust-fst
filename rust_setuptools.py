@@ -3,6 +3,8 @@
 
 https://github.com/mitsuhiko/rust-setuptools
 """
+from __future__ import print_function
+
 import os
 import sys
 import shutil

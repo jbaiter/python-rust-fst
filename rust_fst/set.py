@@ -58,7 +58,7 @@ class FstSet:
         lib.fst_setstream_free(stream_ptr)
 
     def __len__(self):
-        return lib.fst_set_len(self._ptr)
+        return int(lib.fst_set_len(self._ptr))
 
     def union(self, *others):
         # TODO

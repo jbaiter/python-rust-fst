@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import random
 import string
 
@@ -6,13 +7,13 @@ import pytest
 import rust_fst.lib as lib
 from rust_fst import Set
 
-TEST_KEYS = ["moo", "bar", "baz", "foo"]
+TEST_KEYS = [u"möö", u"bar", u"baz", u"foo"]
 
 
 def random_keys(n=10, max_length=128):
     for _ in range(n):
         length = random.randint(1, max_length)
-        yield ''.join(random.choice(string.ascii_uppercase + string.digits)
+        yield u''.join(random.choice(string.ascii_uppercase + string.digits)
                       for _ in range(length))
 
 
@@ -89,7 +90,7 @@ def test_issuperset(tmpdir, fst_set):
 
 def test_isdisjoint(tmpdir, fst_set):
     oth_path = tmpdir.join('other.fst')
-    do_build(str(oth_path), keys=['ene', 'mene'])
+    do_build(str(oth_path), keys=[u'ene', u'mene'])
     other_set = Set(str(oth_path))
     assert fst_set.isdisjoint(other_set)
     assert other_set.isdisjoint(fst_set)
@@ -100,9 +101,9 @@ def test_isdisjoint(tmpdir, fst_set):
 
 def test_search(fst_set):
     matches = list(fst_set.search("bam", 1))
-    assert matches == ["bar", "baz"]
+    assert matches == [u"bar", u"baz"]
 
 
 def test_levautomaton_too_big(fst_set):
     with pytest.raises(lib.LevenshteinError):
-        next(fst_set.search("a"*24, 24))
+        next(fst_set.search(u"a"*24, 24))
