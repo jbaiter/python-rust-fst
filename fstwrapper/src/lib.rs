@@ -1,10 +1,13 @@
 #![crate_type = "dylib"]
+#![feature(core_intrinsics)]
+
 extern crate libc;
 extern crate fst;
 
-use libc::uint32_t;
+use std::error::Error;
 use std::ffi::{CStr,CString};
 use std::fs::File;
+use std::intrinsics;
 use std::io;
 use std::ptr;
 use fst::{IntoStreamer, Streamer, Levenshtein, Set, SetBuilder};
@@ -26,6 +29,64 @@ macro_rules! mutref_from_ptr {
     })
 }
 
+// TODO: Can't we express this with a simple function?
+macro_rules! to_raw_ptr {
+    ($p:expr) => (Box::into_raw(Box::new($p)))
+}
+
+macro_rules! make_free_fn {
+    ($name:ident, $t:ty) => (
+        #[no_mangle]
+        pub extern fn $name(ptr: $t) {
+            unsafe { ptr::read(ptr) };
+        }
+    )
+}
+
+fn get_typename<T>(_: &T) -> &'static str {
+    unsafe { intrinsics::type_name::<T>() }
+}
+
+macro_rules! with_context {
+    ($c:ident, $r:expr, $e:expr) => {{
+        let ctx = mutref_from_ptr!($c);
+        ctx.has_error = false;
+        match $e {
+            Ok(val) => val,
+            Err(err) => {
+                let err_type = get_typename(&err);
+                let err_desc = err.description();
+                let err_disp = format!("{}", err);
+                let err_debug = format!("{:?}", err);
+                ctx.has_error = true;
+                ctx.error_type = CString::new(err_type).unwrap().into_raw();
+                ctx.error_debug = CString::new(err_debug).unwrap().into_raw();
+                ctx.error_display = CString::new(err_disp).unwrap().into_raw();
+                ctx.error_description = CString::new(err_desc).unwrap().into_raw();
+                return $r;
+            }
+        }
+    }}
+}
+
+pub struct Context {
+    has_error: bool,
+    error_type: *const libc::c_char,
+    error_debug: *const libc::c_char,
+    error_display: *const libc::c_char,
+    error_description: *const libc::c_char,
+}
+
+#[no_mangle]
+pub extern fn context_new() -> *mut Context {
+    to_raw_ptr!(Context { has_error: false,
+                          error_type: ptr::null(),
+                          error_description: ptr::null(),
+                          error_display: ptr::null(),
+                          error_debug: ptr::null() })
+}
+make_free_fn!(context_free, *mut Context);
+
 fn cstr_to_str<'a>(s: *mut libc::c_char) -> &'a str {
     let cstr = unsafe { CStr::from_ptr(s) };
     cstr.to_str().unwrap()
@@ -37,48 +98,57 @@ pub extern fn string_free(s: *mut libc::c_char) {
 }
 
 #[no_mangle]
-pub extern fn bufwriter_new(s: *mut libc::c_char) -> *mut io::BufWriter<File> {
+pub extern fn bufwriter_new(ctx: *mut Context,
+                            s: *mut libc::c_char)
+                            -> *mut io::BufWriter<File> {
     let path = cstr_to_str(s);
-    Box::into_raw(Box::new(io::BufWriter::new(File::create(path).unwrap())))
+    let file = with_context!(ctx, ptr::null_mut(), File::create(path));
+    to_raw_ptr!(io::BufWriter::new(file))
 }
+make_free_fn!(bufwriter_free, *mut io::BufWriter<File>);
+
 
 #[no_mangle]
-pub extern fn bufwriter_free(ptr: *mut io::BufWriter<File>) {
-    unsafe { ptr::read(ptr) };
-}
-
-#[no_mangle]
-pub extern fn fst_setbuilder_new(wtr_ptr: *mut io::BufWriter<File>) -> *mut FileSetBuilder {
+pub extern fn fst_setbuilder_new(ctx: *mut Context,
+                                 wtr_ptr: *mut io::BufWriter<File>)
+                                 -> *mut FileSetBuilder {
     let wtr = mutref_from_ptr!(wtr_ptr);
-    let build = SetBuilder::new(wtr).unwrap();
-    Box::into_raw(Box::new(build))
+    to_raw_ptr!(with_context!(ctx, ptr::null_mut(),
+                              SetBuilder::new(wtr)))
 }
 
 #[no_mangle]
-pub extern fn fst_setbuilder_insert(ptr: *mut FileSetBuilder, s: *mut libc::c_char) {
+pub extern fn fst_setbuilder_insert(ctx: *mut Context,
+                                    ptr: *mut FileSetBuilder,
+                                    s: *mut libc::c_char)
+                                    -> bool {
     let build = mutref_from_ptr!(ptr);
-    build.insert(cstr_to_str(s)).unwrap();
+    with_context!(ctx, false, build.insert(cstr_to_str(s)));
+    true
 }
 
 #[no_mangle]
-pub extern fn fst_setbuilder_finish(ptr: *mut FileSetBuilder) {
+pub extern fn fst_setbuilder_finish(ctx: *mut Context,
+                                    ptr: *mut FileSetBuilder)
+                                    -> bool {
     let build = unsafe {
         assert!(!ptr.is_null());
         ptr::read(ptr)
     };
-    build.finish().unwrap()
+    with_context!(ctx, false, build.finish());
+    true
 }
 
 #[no_mangle]
-pub extern fn fst_set_open(cpath: *mut libc::c_char) -> *mut Set {
+pub extern fn fst_set_open(ctx: *mut Context,
+                           cpath: *mut libc::c_char)
+                           -> *mut Set {
     let path = cstr_to_str(cpath);
-    Box::into_raw(Box::new(Set::from_path(path).unwrap()))
+    let set = with_context!(ctx, ptr::null_mut(), Set::from_path(path));
+    to_raw_ptr!(set)
 }
+make_free_fn!(fst_set_free, *mut Set);
 
-#[no_mangle]
-pub extern fn fst_set_free(ptr: *mut Set) {
-    unsafe { ptr::read(ptr) };
-}
 
 #[no_mangle]
 pub extern fn fst_set_contains(ptr: *mut Set, s: *mut libc::c_char) -> bool {
@@ -89,8 +159,9 @@ pub extern fn fst_set_contains(ptr: *mut Set, s: *mut libc::c_char) -> bool {
 #[no_mangle]
 pub extern fn fst_set_stream(ptr: *mut Set) -> *mut Stream<'static> {
     let set = mutref_from_ptr!(ptr);
-    Box::into_raw(Box::new(set.stream()))
+    to_raw_ptr!(set.stream())
 }
+make_free_fn!(fst_set_stream_free, *mut Stream);
 
 #[no_mangle]
 pub extern fn fst_set_len(ptr: *mut Set) -> libc::size_t {
@@ -129,30 +200,25 @@ pub extern fn fst_stream_next(ptr: *mut Stream) -> *const libc::c_char {
 }
 
 #[no_mangle]
-pub extern fn fst_stream_free(ptr: *mut Stream) {
-    unsafe { ptr::read(ptr) };
-}
-
-#[no_mangle]
-pub extern fn levenshtein_new(c_key: *mut libc::c_char,
-                              max_dist: uint32_t) -> *mut Levenshtein {
+pub extern fn levenshtein_new(ctx: *mut Context,
+                              c_key: *mut libc::c_char,
+                              max_dist: libc::uint32_t)
+                              -> *mut Levenshtein {
     let key = cstr_to_str(c_key);
-    Box::into_raw(Box::new(Levenshtein::new(key, max_dist).unwrap()))
+    let lev = with_context!(ctx, ptr::null_mut(),
+                            Levenshtein::new(key, max_dist));
+    to_raw_ptr!(lev)
 }
-
-#[no_mangle]
-pub extern fn levenshtein_free(ptr: *mut Levenshtein) {
-    unsafe { ptr::read(ptr) };
-}
+make_free_fn!(fst_levenshtein_free, *mut Levenshtein);
 
 #[no_mangle]
 pub extern fn fst_set_search(set_ptr: *mut Set,
                              lev_ptr: *mut Levenshtein) -> *mut Stream<'static, &'static Levenshtein> {
     let set = mutref_from_ptr!(set_ptr);
     let lev = ref_from_ptr!(lev_ptr);
-    let sb = set.search(lev);
-    Box::into_raw(Box::new(sb.into_stream()))
+    to_raw_ptr!(set.search(lev).into_stream())
 }
+make_free_fn!(fst_lev_stream_free, *mut Stream<&Levenshtein>);
 
 
 #[no_mangle]
@@ -162,9 +228,4 @@ pub extern fn lev_stream_next(ptr: *mut Stream<&Levenshtein>) -> *const libc::c_
         Some(val) => CString::new(val).unwrap().into_raw(),
         None      => ptr::null()
     }
-}
-
-#[no_mangle]
-pub extern fn lev_stream_free(ptr: *mut Stream<&Levenshtein>) {
-    unsafe { ptr::read(ptr) };
 }

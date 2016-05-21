@@ -1,15 +1,16 @@
 from contextlib import contextmanager
 
-from .lib import ffi, lib
+from .lib import ffi, lib, checked_call
 
 
 class SetBuilder:
-    def __init__(self, ptr):
+    def __init__(self, ctx, ptr):
+        self._ctx = ctx
         self._ptr = ptr
 
     def insert(self, val):
         c_str = ffi.new("char[]", val.encode('utf8'))
-        lib.fst_setbuilder_insert(self._ptr, c_str)
+        checked_call(lib.fst_setbuilder_insert, self._ctx, self._ptr, c_str)
 
 
 class FstSet:
@@ -27,17 +28,20 @@ class FstSet:
         See http://burntsushi.net/rustdoc/fst/struct.SetBuilder.html for more
         details.
         """
-        writer_p = lib.bufwriter_new(fpath.encode('utf8'))
-        builder_p = lib.fst_setbuilder_new(writer_p)
-        yield SetBuilder(builder_p)
-        lib.fst_setbuilder_finish(builder_p)
+        ctx = lib.context_new();
+        writer_p = checked_call(lib.bufwriter_new, ctx, fpath.encode('utf8'))
+        builder_p = checked_call(lib.fst_setbuilder_new, ctx, writer_p)
+        yield SetBuilder(ctx, builder_p)
+        checked_call(lib.fst_setbuilder_finish, ctx, builder_p)
         lib.bufwriter_free(writer_p)
+        lib.context_free(ctx)
 
     def __init__(self, path):
         """ Load an FST set from a given file. """
-        self._ptr = ffi.gc(
-            lib.fst_set_open(ffi.new("char[]", path.encode('utf8'))),
-            lib.fst_set_free)
+        self._ctx = ffi.gc(lib.context_new(), lib.context_free)
+        s = checked_call(lib.fst_set_open, ctx,
+                         ffi.new("char[]", path.encode('utf8')))
+        self._ptr = ffi.gc(s, lib.fst_set_free)
 
     def __contains__(self, val):
         return lib.fst_set_contains(
@@ -89,8 +93,10 @@ class FstSet:
         :returns:           Matching values in the set
         :rtype:             generator that yields str
         """
-        lev_ptr = lib.levenshtein_new(ffi.new("char[]", term.encode('utf8')),
-                                    max_dist)
+        lev_ptr = checked_call(
+            self._ctx,
+            lib.levenshtein_new(ffi.new("char[]", term.encode('utf8')),
+                                max_dist))
         stream_ptr = lib.fst_set_search(self._ptr, lev_ptr)
         while True:
             c_str = lib.lev_stream_next(stream_ptr)
