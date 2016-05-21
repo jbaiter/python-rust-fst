@@ -3,24 +3,65 @@ from contextlib import contextmanager
 from .lib import ffi, lib, checked_call
 
 
-class SetBuilder:
-    def __init__(self, ctx, ptr):
-        self._ctx = ctx
-        self._ptr = ptr
+class SetBuilder(object):
+    def insert(self, val):
+        raise NotImplementedError
+
+    def finish(self):
+        raise NotImplementedError
+
+
+class FileSetBuilder(SetBuilder):
+    def __init__(self, fpath):
+        self._ctx = lib.context_new();
+        self._writer_p = checked_call(
+            lib.fst_bufwriter_new, self._ctx, fpath.encode('utf8'))
+        self._builder_p = checked_call(
+            lib.fst_filesetbuilder_new, self._ctx, self._writer_p)
 
     def insert(self, val):
         c_str = ffi.new("char[]", val.encode('utf8'))
-        checked_call(lib.fst_setbuilder_insert, self._ctx, self._ptr, c_str)
+        checked_call(lib.fst_filesetbuilder_insert,
+                     self._ctx, self._builder_p, c_str)
+
+    def finish(self):
+        checked_call(lib.fst_filesetbuilder_finish,
+                     self._ctx, self._builder_p)
+        lib.fst_bufwriter_free(self._writer_p)
+        lib.fst_context_free(self._ctx)
 
 
-class FstSet:
+class MemSetBuilder(SetBuilder):
+    def __init__(self):
+        self._ctx = lib.context_new();
+        self._ptr = lib.fst_memsetbuilder_new()
+        self._set_ptr = None
+
+    def insert(self, val):
+        c_str = ffi.new("char[]", val.encode('utf8'))
+        checked_call(lib.fst_memsetbuilder_insert, self._ctx, self._ptr, c_str)
+
+    def finish(self):
+        self._set_ptr = checked_call(lib.fst_memsetbuilder_finish,
+                                     self._ctx, self._ptr)
+        lib.fst_context_free(self._ctx)
+        self._ctx = None
+        self._ptr = None
+
+    def get_set(self):
+        if self._set_ptr is None:
+            raise ValueError("The builder has to be finished first.")
+        return FstSet(pointer=self._set_ptr)
+
+
+class FstSet(object):
     """ An immutable set backed by a finite state transducer stored on disk.
 
     The interface tries to follow the `frozenset` type as much as possible.
     """
     @staticmethod
     @contextmanager
-    def build(fpath):
+    def build(fpath=None):
         """ Context manager to build a new FST set in a given file.
 
         Keys must be inserted in lexicographical order.
@@ -28,19 +69,31 @@ class FstSet:
         See http://burntsushi.net/rustdoc/fst/struct.SetBuilder.html for more
         details.
         """
-        ctx = lib.context_new();
-        writer_p = checked_call(lib.bufwriter_new, ctx, fpath.encode('utf8'))
-        builder_p = checked_call(lib.fst_setbuilder_new, ctx, writer_p)
-        yield SetBuilder(ctx, builder_p)
-        checked_call(lib.fst_setbuilder_finish, ctx, builder_p)
-        lib.bufwriter_free(writer_p)
-        lib.context_free(ctx)
+        if fpath:
+            builder = FileSetBuilder(fpath)
+        else:
+            builder = MemSetBuilder()
+        yield builder
+        builder.finish()
 
-    def __init__(self, path):
+    @classmethod
+    def from_iter(cls, it, fpath=None):
+        with cls.build(fpath) as builder:
+            for key in it:
+                builder.insert(key)
+        if fpath:
+            return cls(path=fpath)
+        else:
+            return builder.get_set()
+
+    def __init__(self, path=None, pointer=None):
         """ Load an FST set from a given file. """
-        self._ctx = ffi.gc(lib.context_new(), lib.context_free)
-        s = checked_call(lib.fst_set_open, self._ctx,
-                         ffi.new("char[]", path.encode('utf8')))
+        self._ctx = ffi.gc(lib.context_new(), lib.fst_context_free)
+        if path:
+            s = checked_call(lib.fst_set_open, self._ctx,
+                             ffi.new("char[]", path.encode('utf8')))
+        else:
+            s = pointer
         self._ptr = ffi.gc(s, lib.fst_set_free)
 
     def __contains__(self, val):
@@ -54,7 +107,7 @@ class FstSet:
             if c_str == ffi.NULL:
                 break
             yield ffi.string(c_str).decode('utf8')
-            lib.string_free(c_str)
+            lib.fst_string_free(c_str)
         lib.fst_setstream_free(stream_ptr)
 
     def __len__(self):
@@ -102,6 +155,6 @@ class FstSet:
             if c_str == ffi.NULL:
                 break
             yield ffi.string(c_str).decode('utf8')
-            lib.string_free(c_str)
+            lib.fst_string_free(c_str)
         lib.fst_levstream_free(stream_ptr)
         lib.fst_levenshtein_free(lev_ptr)

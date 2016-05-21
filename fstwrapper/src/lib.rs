@@ -14,6 +14,7 @@ use fst::{IntoStreamer, Streamer, Levenshtein, Set, SetBuilder};
 use fst::set::Stream;
 
 pub type FileSetBuilder = SetBuilder<&'static mut io::BufWriter<File>>;
+pub type MemSetBuilder = SetBuilder<Vec<u8>>;
 
 macro_rules! ref_from_ptr {
     ($p:ident) => (unsafe {
@@ -85,7 +86,7 @@ pub extern fn context_new() -> *mut Context {
                           error_display: ptr::null(),
                           error_debug: ptr::null() })
 }
-make_free_fn!(context_free, *mut Context);
+make_free_fn!(fst_context_free, *mut Context);
 
 fn cstr_to_str<'a>(s: *mut libc::c_char) -> &'a str {
     let cstr = unsafe { CStr::from_ptr(s) };
@@ -93,50 +94,78 @@ fn cstr_to_str<'a>(s: *mut libc::c_char) -> &'a str {
 }
 
 #[no_mangle]
-pub extern fn string_free(s: *mut libc::c_char) {
+pub extern fn fst_string_free(s: *mut libc::c_char) {
     unsafe { CString::from_raw(s) };
 }
 
 #[no_mangle]
-pub extern fn bufwriter_new(ctx: *mut Context,
-                            s: *mut libc::c_char)
-                            -> *mut io::BufWriter<File> {
+pub extern fn fst_bufwriter_new(ctx: *mut Context,
+                                s: *mut libc::c_char)
+                                -> *mut io::BufWriter<File> {
     let path = cstr_to_str(s);
     let file = with_context!(ctx, ptr::null_mut(), File::create(path));
     to_raw_ptr!(io::BufWriter::new(file))
 }
-make_free_fn!(bufwriter_free, *mut io::BufWriter<File>);
+make_free_fn!(fst_bufwriter_free, *mut io::BufWriter<File>);
 
 
 #[no_mangle]
-pub extern fn fst_setbuilder_new(ctx: *mut Context,
-                                 wtr_ptr: *mut io::BufWriter<File>)
-                                 -> *mut FileSetBuilder {
+pub extern fn fst_filesetbuilder_new(ctx: *mut Context,
+                                     wtr_ptr: *mut io::BufWriter<File>)
+                                     -> *mut FileSetBuilder {
     let wtr = mutref_from_ptr!(wtr_ptr);
     to_raw_ptr!(with_context!(ctx, ptr::null_mut(),
                               SetBuilder::new(wtr)))
 }
 
 #[no_mangle]
-pub extern fn fst_setbuilder_insert(ctx: *mut Context,
-                                    ptr: *mut FileSetBuilder,
-                                    s: *mut libc::c_char)
-                                    -> bool {
+pub extern fn fst_filesetbuilder_insert(ctx: *mut Context,
+                                        ptr: *mut FileSetBuilder,
+                                        s: *mut libc::c_char)
+                                        -> bool {
     let build = mutref_from_ptr!(ptr);
     with_context!(ctx, false, build.insert(cstr_to_str(s)));
     true
 }
 
 #[no_mangle]
-pub extern fn fst_setbuilder_finish(ctx: *mut Context,
-                                    ptr: *mut FileSetBuilder)
-                                    -> bool {
+pub extern fn fst_filesetbuilder_finish(ctx: *mut Context,
+                                        ptr: *mut FileSetBuilder)
+                                        -> bool {
     let build = unsafe {
         assert!(!ptr.is_null());
         ptr::read(ptr)
     };
     with_context!(ctx, false, build.finish());
     true
+}
+
+#[no_mangle]
+pub extern fn fst_memsetbuilder_new() -> *mut MemSetBuilder {
+    to_raw_ptr!(SetBuilder::memory())
+}
+
+#[no_mangle]
+pub extern fn fst_memsetbuilder_insert (ctx: *mut Context,
+                                        ptr: *mut MemSetBuilder,
+                                        s: *mut libc::c_char)
+                                        -> bool {
+    let build = mutref_from_ptr!(ptr);
+    with_context!(ctx, false, build.insert(cstr_to_str(s)));
+    true
+}
+
+#[no_mangle]
+pub extern fn fst_memsetbuilder_finish(ctx: *mut Context,
+                                       ptr: *mut MemSetBuilder)
+                                       -> *mut Set {
+    let build = unsafe {
+        assert!(!ptr.is_null());
+        ptr::read(ptr)
+    };
+    let data = with_context!(ctx, ptr::null_mut(), build.into_inner());
+    let set = with_context!(ctx, ptr::null_mut(), Set::from_bytes(data));
+    to_raw_ptr!(set)
 }
 
 #[no_mangle]

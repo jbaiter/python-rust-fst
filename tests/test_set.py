@@ -49,6 +49,9 @@ def test_build_baddir():
             for key in sorted(TEST_KEYS):
                 builder.insert(key)
 
+def test_build_memory():
+    memset = Set.from_iter(sorted(TEST_KEYS))
+    assert len(memset) == 4
 
 def test_load_badfile(tmpdir):
     bad_path = tmpdir.join("bad.fst")

@@ -12,6 +12,7 @@ ffi.cdef("""
     } Context;
 
     typedef struct FileSetBuilder_S FileSetBuilder;
+    typedef struct MemSetBuilder_S MemSetBuilder;
     typedef struct BufWriter_S BufWriter;
     typedef struct Set_S Set;
     typedef struct Stream_S Stream;
@@ -19,16 +20,20 @@ ffi.cdef("""
     typedef struct LevStream_S LevStream;
 
     Context* context_new();
-    void context_free(Context*);
+    void fst_context_free(Context*);
 
-    void string_free(char*);
+    void fst_string_free(char*);
 
-    BufWriter* bufwriter_new(Context*, char*);
-    void bufwriter_free(BufWriter*);
+    BufWriter* fst_bufwriter_new(Context*, char*);
+    void fst_bufwriter_free(BufWriter*);
 
-    FileSetBuilder* fst_setbuilder_new(Context*, BufWriter*);
-    void fst_setbuilder_insert(Context*, FileSetBuilder*, char*);
-    void fst_setbuilder_finish(Context*, FileSetBuilder*);
+    FileSetBuilder* fst_filesetbuilder_new(Context*, BufWriter*);
+    void fst_filesetbuilder_insert(Context*, FileSetBuilder*, char*);
+    void fst_filesetbuilder_finish(Context*, FileSetBuilder*);
+
+    MemSetBuilder* fst_memsetbuilder_new();
+    bool fst_memsetbuilder_insert(Context*, MemSetBuilder*, char*);
+    Set* fst_memsetbuilder_finish(Context*, MemSetBuilder*);
 
     Set* fst_set_open(Context*, char*);
     bool fst_set_contains(Set*, char*);
