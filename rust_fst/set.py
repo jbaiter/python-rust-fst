@@ -3,6 +3,16 @@ from contextlib import contextmanager
 from .lib import ffi, lib, checked_call
 
 
+def make_stream_iter(stream_ptr, next_fn, free_fn):
+    while True:
+        c_str = next_fn(stream_ptr)
+        if c_str == ffi.NULL:
+            break
+        yield ffi.string(c_str).decode('utf8')
+        lib.fst_string_free(c_str)
+    free_fn(stream_ptr)
+
+
 class SetBuilder(object):
     def insert(self, val):
         raise NotImplementedError
@@ -52,6 +62,37 @@ class MemSetBuilder(SetBuilder):
         if self._set_ptr is None:
             raise ValueError("The builder has to be finished first.")
         return FstSet(pointer=self._set_ptr)
+
+
+class OpBuilder(object):
+    def __init__(self, set_ptr):
+        # NOTE: No need for `ffi.gc`, since the struct will be free'd
+        #       once we call union/intersection/difference
+        self._ptr = lib.fst_set_make_opbuilder(set_ptr)
+
+    def push(self, set_ptr):
+        lib.fst_opbuilder_push(self._ptr, set_ptr)
+
+    def union(self):
+        stream_ptr = lib.fst_opbuilder_union(self._ptr)
+        return make_stream_iter(stream_ptr, lib.fst_union_next,
+                                lib.fst_union_free)
+
+    def intersection(self):
+        stream_ptr = lib.fst_opbuilder_intersection(self._ptr)
+        return make_stream_iter(stream_ptr, lib.fst_intersection_next,
+                                lib.fst_intersection_free)
+
+    def difference(self):
+        stream_ptr = lib.fst_opbuilder_difference(self._ptr)
+        return make_stream_iter(stream_ptr, lib.fst_difference_next,
+                                lib.fst_difference_free)
+
+    def symmetric_difference(self):
+        stream_ptr = lib.fst_opbuilder_symmetricdifference(self._ptr)
+        return make_stream_iter(stream_ptr,
+                                lib.fst_symmetricdifference_next,
+                                lib.fst_symmetricdifference_free)
 
 
 class FstSet(object):
@@ -113,21 +154,24 @@ class FstSet(object):
     def __len__(self):
         return int(lib.fst_set_len(self._ptr))
 
+    def _make_opbuilder(self, *others):
+        opbuilder = OpBuilder(self._ptr)
+        for oth in others:
+            opbuilder.push(oth._ptr)
+        return opbuilder
+
     def union(self, *others):
-        # TODO
-        raise NotImplementedError
+        return self._make_opbuilder(*others).union()
 
     def intersection(self, *others):
-        # TODO
-        raise NotImplementedError
+        return self._make_opbuilder(*others).intersection()
 
     def difference(self, *others):
         # TODO
         raise NotImplementedError
 
     def symmetric_difference(self, *others):
-        # TODO
-        raise NotImplementedError
+        return self._make_opbuilder(*others).symmetric_difference()
 
     def issubset(self, other):
         return bool(lib.fst_set_issubset(self._ptr, other._ptr))

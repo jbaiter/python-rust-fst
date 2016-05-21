@@ -110,3 +110,12 @@ def test_search(fst_set):
 def test_levautomaton_too_big(fst_set):
     with pytest.raises(lib.LevenshteinError):
         next(fst_set.search(u"a"*24, 24))
+
+
+def test_ops():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    assert list(a.union(b)) == ["bar", "baz", "foo"]
+    assert list(a.intersection(b)) == ["foo"]
+    assert list(a.symmetric_difference(b)) == ["bar", "baz"]
+

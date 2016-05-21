@@ -18,6 +18,11 @@ ffi.cdef("""
     typedef struct Stream_S Stream;
     typedef struct Levenshtein_S Levenshtein;
     typedef struct LevStream_S LevStream;
+    typedef struct OpBuilder_S OpBuilder;
+    typedef struct Union_S Union;
+    typedef struct Intersection_S Intersection;
+    typedef struct Difference_S Difference;
+    typedef struct SymmetricDifference_S SymmetricDifference;
 
     Context* context_new();
     void fst_context_free(Context*);
@@ -43,6 +48,7 @@ ffi.cdef("""
     bool fst_set_issuperset(Set*, Set*);
     Stream* fst_set_stream(Set*);
     LevStream* fst_set_levsearch(Set*, Levenshtein*);
+    OpBuilder* fst_set_make_opbuilder(Set*);
     void fst_set_free(Set*);
 
     char* fst_setstream_next(Stream*);
@@ -53,6 +59,25 @@ ffi.cdef("""
 
     Levenshtein* fst_levenshtein_new(Context*, char*, uint32_t);
     void fst_levenshtein_free(Levenshtein*);
+
+    void fst_opbuilder_push(OpBuilder*, Set*);
+    void fst_opbuilder_free(OpBuilder*);
+
+    Union* fst_opbuilder_union(OpBuilder*);
+    char* fst_union_next(Union*);
+    void fst_union_free(Union*);
+
+    Intersection* fst_opbuilder_intersection(OpBuilder*);
+    char* fst_intersection_next(Intersection*);
+    void fst_intersection_free(Intersection*);
+
+    Difference* fst_opbuilder_difference(OpBuilder*);
+    char* fst_difference_next(Difference*);
+    void fst_difference_free(Difference*);
+
+    SymmetricDifference* fst_opbuilder_symmetricdifference(OpBuilder*);
+    char* fst_symmetricdifference_next(SymmetricDifference*);
+    void fst_symmetricdifference_free(SymmetricDifference*);
 """)
 
 if __name__ == '__main__':
