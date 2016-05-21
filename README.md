@@ -18,7 +18,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
     * Rust nightly (install via [rustup][5])
 - Clone the repository. Installation with `pip install git+...` does not work
   currently
-- Add `rustup override add nightly` to add an override for rustup to use the
+- Run `rustup override add nightly` to add an override for rustup to use the
   nightly channel for the repository
 - Run `python setup.py bdist_wheel` to generate a wheel
 - Install the wheel with `pip install dist/rust_fst-0.1-py3-none-any.whl`
