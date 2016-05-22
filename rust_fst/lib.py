@@ -60,3 +60,13 @@ def checked_call(fn, ctx, *args):
     if err_type is None:
         err_type = FstError
     raise err_type(msg)
+
+
+def make_stream_iter(stream_ptr, next_fn, free_fn):
+    while True:
+        c_str = next_fn(stream_ptr)
+        if c_str == ffi.NULL:
+            break
+        yield ffi.string(c_str).decode('utf8')
+        lib.fst_string_free(c_str)
+    free_fn(stream_ptr)

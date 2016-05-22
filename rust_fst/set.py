@@ -1,16 +1,6 @@
 from contextlib import contextmanager
 
-from .lib import ffi, lib, checked_call
-
-
-def make_stream_iter(stream_ptr, next_fn, free_fn):
-    while True:
-        c_str = next_fn(stream_ptr)
-        if c_str == ffi.NULL:
-            break
-        yield ffi.string(c_str).decode('utf8')
-        lib.fst_string_free(c_str)
-    free_fn(stream_ptr)
+from .lib import ffi, lib, make_stream_iter, checked_call
 
 
 class SetBuilder(object):
@@ -23,7 +13,7 @@ class SetBuilder(object):
 
 class FileSetBuilder(SetBuilder):
     def __init__(self, fpath):
-        self._ctx = lib.context_new();
+        self._ctx = lib.fst_context_new();
         self._writer_p = checked_call(
             lib.fst_bufwriter_new, self._ctx, fpath.encode('utf8'))
         self._builder_p = checked_call(
@@ -43,7 +33,7 @@ class FileSetBuilder(SetBuilder):
 
 class MemSetBuilder(SetBuilder):
     def __init__(self):
-        self._ctx = lib.context_new();
+        self._ctx = lib.fst_context_new();
         self._ptr = lib.fst_memsetbuilder_new()
         self._set_ptr = None
 
@@ -71,28 +61,28 @@ class OpBuilder(object):
         self._ptr = lib.fst_set_make_opbuilder(set_ptr)
 
     def push(self, set_ptr):
-        lib.fst_opbuilder_push(self._ptr, set_ptr)
+        lib.fst_set_opbuilder_push(self._ptr, set_ptr)
 
     def union(self):
-        stream_ptr = lib.fst_opbuilder_union(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_union_next,
-                                lib.fst_union_free)
+        stream_ptr = lib.fst_set_opbuilder_union(self._ptr)
+        return make_stream_iter(stream_ptr, lib.fst_set_union_next,
+                                lib.fst_set_union_free)
 
     def intersection(self):
-        stream_ptr = lib.fst_opbuilder_intersection(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_intersection_next,
-                                lib.fst_intersection_free)
+        stream_ptr = lib.fst_set_opbuilder_intersection(self._ptr)
+        return make_stream_iter(stream_ptr, lib.fst_set_intersection_next,
+                                lib.fst_set_intersection_free)
 
     def difference(self):
-        stream_ptr = lib.fst_opbuilder_difference(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_difference_next,
-                                lib.fst_difference_free)
+        stream_ptr = lib.fst_set_opbuilder_difference(self._ptr)
+        return make_stream_iter(stream_ptr, lib.fst_set_difference_next,
+                                lib.fst_set_difference_free)
 
     def symmetric_difference(self):
-        stream_ptr = lib.fst_opbuilder_symmetricdifference(self._ptr)
+        stream_ptr = lib.fst_set_opbuilder_symmetricdifference(self._ptr)
         return make_stream_iter(stream_ptr,
-                                lib.fst_symmetricdifference_next,
-                                lib.fst_symmetricdifference_free)
+                                lib.fst_set_symmetricdifference_next,
+                                lib.fst_set_symmetricdifference_free)
 
 
 class FstSet(object):
@@ -129,7 +119,7 @@ class FstSet(object):
 
     def __init__(self, path=None, pointer=None):
         """ Load an FST set from a given file. """
-        self._ctx = ffi.gc(lib.context_new(), lib.fst_context_free)
+        self._ctx = ffi.gc(lib.fst_context_new(), lib.fst_context_free)
         if path:
             s = checked_call(lib.fst_set_open, self._ctx,
                              ffi.new("char[]", path.encode('utf8')))
@@ -144,12 +134,12 @@ class FstSet(object):
     def __iter__(self):
         stream_ptr = lib.fst_set_stream(self._ptr)
         while True:
-            c_str = lib.fst_setstream_next(stream_ptr)
+            c_str = lib.fst_set_stream_next(stream_ptr)
             if c_str == ffi.NULL:
                 break
             yield ffi.string(c_str).decode('utf8')
             lib.fst_string_free(c_str)
-        lib.fst_setstream_free(stream_ptr)
+        lib.fst_set_stream_free(stream_ptr)
 
     def __len__(self):
         return int(lib.fst_set_len(self._ptr))
@@ -196,10 +186,10 @@ class FstSet(object):
             ffi.new("char[]", term.encode('utf8')), max_dist)
         stream_ptr = lib.fst_set_levsearch(self._ptr, lev_ptr)
         while True:
-            c_str = lib.fst_levstream_next(stream_ptr)
+            c_str = lib.fst_set_levstream_next(stream_ptr)
             if c_str == ffi.NULL:
                 break
             yield ffi.string(c_str).decode('utf8')
             lib.fst_string_free(c_str)
-        lib.fst_levstream_free(stream_ptr)
+        lib.fst_set_levstream_free(stream_ptr)
         lib.fst_levenshtein_free(lev_ptr)

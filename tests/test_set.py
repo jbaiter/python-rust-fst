@@ -1,20 +1,11 @@
 # -*- coding: utf-8 -*-
-import random
-import string
-
 import pytest
 
 import rust_fst.lib as lib
 from rust_fst import Set
 
+
 TEST_KEYS = [u"möö", u"bar", u"baz", u"foo"]
-
-
-def random_keys(n=10, max_length=128):
-    for _ in range(n):
-        length = random.randint(1, max_length)
-        yield u''.join(random.choice(string.ascii_uppercase + string.digits)
-                      for _ in range(length))
 
 
 def do_build(path, keys=TEST_KEYS, sorted_=True):

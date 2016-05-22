@@ -3,6 +3,10 @@ from cffi import FFI
 ffi = FFI()
 ffi.set_source('rust_fst._ffi', None)
 ffi.cdef("""
+
+    /** ===============================
+                   Utility
+        =============================== **/
     typedef struct {
         bool  has_error;
         char* error_type;
@@ -11,26 +15,34 @@ ffi.cdef("""
         char* error_debug;
     } Context;
 
-    typedef struct FileSetBuilder_S FileSetBuilder;
-    typedef struct MemSetBuilder_S MemSetBuilder;
-    typedef struct BufWriter_S BufWriter;
-    typedef struct Set_S Set;
-    typedef struct Stream_S Stream;
-    typedef struct Levenshtein_S Levenshtein;
-    typedef struct LevStream_S LevStream;
-    typedef struct OpBuilder_S OpBuilder;
-    typedef struct Union_S Union;
-    typedef struct Intersection_S Intersection;
-    typedef struct Difference_S Difference;
-    typedef struct SymmetricDifference_S SymmetricDifference;
+    typedef struct BufWriter BufWriter;
+    typedef struct Levenshtein Levenshtein;
 
-    Context* context_new();
+    Levenshtein* fst_levenshtein_new(Context*, char*, uint32_t);
+    void fst_levenshtein_free(Levenshtein*);
+
+    Context* fst_context_new();
     void fst_context_free(Context*);
 
     void fst_string_free(char*);
 
     BufWriter* fst_bufwriter_new(Context*, char*);
     void fst_bufwriter_free(BufWriter*);
+
+
+    /** ===============================
+                     Set
+        =============================== **/
+    typedef struct FileSetBuilder FileSetBuilder;
+    typedef struct MemSetBuilder MemSetBuilder;
+    typedef struct Set Set;
+    typedef struct SetStream SetStream;
+    typedef struct SetLevStream SetLevStream;
+    typedef struct SetOpBuilder SetOpBuilder;
+    typedef struct SetUnion SetUnion;
+    typedef struct SetIntersection SetIntersection;
+    typedef struct SetDifference SetDifference;
+    typedef struct SetSymmetricDifference SetSymmetricDifference;
 
     FileSetBuilder* fst_filesetbuilder_new(Context*, BufWriter*);
     void fst_filesetbuilder_insert(Context*, FileSetBuilder*, char*);
@@ -46,38 +58,86 @@ ffi.cdef("""
     bool fst_set_isdisjoint(Set*, Set*);
     bool fst_set_issubset(Set*, Set*);
     bool fst_set_issuperset(Set*, Set*);
-    Stream* fst_set_stream(Set*);
-    LevStream* fst_set_levsearch(Set*, Levenshtein*);
-    OpBuilder* fst_set_make_opbuilder(Set*);
+    SetStream* fst_set_stream(Set*);
+    SetLevStream* fst_set_levsearch(Set*, Levenshtein*);
+    SetOpBuilder* fst_set_make_opbuilder(Set*);
     void fst_set_free(Set*);
 
-    char* fst_setstream_next(Stream*);
-    void fst_setstream_free(Stream*);
+    char* fst_set_stream_next(SetStream*);
+    void fst_set_stream_free(SetStream*);
 
-    char* fst_levstream_next(LevStream*);
-    void fst_levstream_free(LevStream*);
+    char* fst_set_levstream_next(SetLevStream*);
+    void fst_set_levstream_free(SetLevStream*);
 
-    Levenshtein* fst_levenshtein_new(Context*, char*, uint32_t);
-    void fst_levenshtein_free(Levenshtein*);
+    void fst_set_opbuilder_push(SetOpBuilder*, Set*);
+    void fst_set_opbuilder_free(SetOpBuilder*);
+    SetUnion* fst_set_opbuilder_union(SetOpBuilder*);
+    SetIntersection* fst_set_opbuilder_intersection(SetOpBuilder*);
+    SetDifference* fst_set_opbuilder_difference(SetOpBuilder*);
+    SetSymmetricDifference* fst_set_opbuilder_symmetricdifference(SetOpBuilder*);
 
-    void fst_opbuilder_push(OpBuilder*, Set*);
-    void fst_opbuilder_free(OpBuilder*);
+    char* fst_set_union_next(SetUnion*);
+    void fst_set_union_free(SetUnion*);
 
-    Union* fst_opbuilder_union(OpBuilder*);
-    char* fst_union_next(Union*);
-    void fst_union_free(Union*);
+    char* fst_set_intersection_next(SetIntersection*);
+    void fst_set_intersection_free(SetIntersection*);
 
-    Intersection* fst_opbuilder_intersection(OpBuilder*);
-    char* fst_intersection_next(Intersection*);
-    void fst_intersection_free(Intersection*);
+    char* fst_set_difference_next(SetDifference*);
+    void fst_set_difference_free(SetDifference*);
 
-    Difference* fst_opbuilder_difference(OpBuilder*);
-    char* fst_difference_next(Difference*);
-    void fst_difference_free(Difference*);
+    char* fst_set_symmetricdifference_next(SetSymmetricDifference*);
+    void fst_set_symmetricdifference_free(SetSymmetricDifference*);
 
-    SymmetricDifference* fst_opbuilder_symmetricdifference(OpBuilder*);
-    char* fst_symmetricdifference_next(SymmetricDifference*);
-    void fst_symmetricdifference_free(SymmetricDifference*);
+
+
+    /** ===============================
+                     Map
+        =============================== **/
+
+    typedef struct {
+        char*       key;
+        uint64_t    value;
+    } MapItem;
+
+    typedef struct FileMapBuilder FileMapBuilder;
+    typedef struct MemMapBuilder MemMapBuilder;
+    typedef struct Map Map;
+    typedef struct MapStream MapStream;
+    typedef struct LevMapStream LevMapStream;
+    typedef struct MapKeyStream MapKeyStream;
+    typedef struct MapValueStream MapValueStream;
+    typedef struct MapOpBuilder MapOpBuilder;
+    typedef struct MapUnion MapUnion;
+    typedef struct MapIntersection MapIntersection;
+    typedef struct MapDifference MapDifference;
+    typedef struct MapSymmetricDifference MapSymmetricDifference;
+
+    FileMapBuilder* fst_filemapbuilder_new(Context*, BufWriter*);
+    bool fst_filemapbuilder_insert(Context*, FileMapBuilder*, char*, uint64_t);
+    bool fst_filemapbuilder_finish(Context*, FileMapBuilder*);
+
+    MemMapBuilder* fst_memmapbuilder_new();
+    bool fst_memmapbuilder_insert(Context*, MemMapBuilder*, char*, uint64_t);
+    Map* fst_memmapbuilder_finish(Context*, MemMapBuilder*);
+
+    Map* fst_map_open(Context*, char*);
+    void fst_map_free(Map*);
+    uint64_t fst_map_get(Context*, Map*, char*);
+    size_t fst_map_len(Map*);
+    bool fst_map_contains(Map*, char*);
+    MapStream* fst_map_stream(Map*);
+    MapKeyStream* fst_map_keys(Map*);
+    MapValueStream* fst_map_values(Map*);
+
+    MapItem* fst_mapstream_next(MapStream*);
+    void fst_mapstream_free(MapStream*);
+    void fst_mapitem_free(MapItem*);
+
+    char* fst_mapkeys_next(MapKeyStream*);
+    void fst_mapkeys_free(MapKeyStream*);
+
+    uint64_t fst_mapvalues_next(Context*, MapValueStream*);
+    void fst_mapvalues_free(MapValueStream*);
 """)
 
 if __name__ == '__main__':
