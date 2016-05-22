@@ -34,7 +34,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 [X]  Create and load maps on disk and in memory
 [X]  Iterate through complete map (key, value) pairs
 [X]  Iterate through complete map keys and items
-[ ]  Search map keys with a Levenshtein automaton
+[X]  Search map keys with a Levenshtein automaton
 [ ]  Perform set operations (union, [symmetric] difference, intersection)
      on the map
 [ ]  Iterate through a range of map contents

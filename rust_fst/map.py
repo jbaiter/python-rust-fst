@@ -136,6 +136,9 @@ class FstMap(object):
     def __iter__(self):
         return self.keys()
 
+    def __len__(self):
+        return int(lib.fst_map_len(self._ptr))
+
     def keys(self):
         stream_ptr = lib.fst_map_keys(self._ptr)
         while True:
@@ -166,5 +169,24 @@ class FstMap(object):
             lib.fst_mapitem_free(itm)
         lib.fst_mapstream_free(stream_ptr)
 
-    def __len__(self):
-        return int(lib.fst_map_len(self._ptr))
+    def search(self, term, max_dist):
+        """ Search the map keys with a Levenshtein automaton.
+
+        :param term:        The search term
+        :param max_dist:    The maximum edit distance for search results
+        :returns:           Matching (key, value) items in the map
+        :rtype:             generator that yields (str, int) tuples
+        """
+        lev_ptr = checked_call(
+            lib.fst_levenshtein_new, self._ctx,
+            ffi.new("char[]", term.encode('utf8')), max_dist)
+        stream_ptr = lib.fst_map_levsearch(self._ptr, lev_ptr)
+        while True:
+            itm = lib.fst_map_levstream_next(stream_ptr)
+            if itm == ffi.NULL:
+                break
+            c_key = ffi.string(itm.key).decode('utf8')
+            yield (c_key, itm.value)
+            lib.fst_mapitem_free(itm)
+        lib.fst_map_levstream_free(stream_ptr)
+        lib.fst_levenshtein_free(lev_ptr)

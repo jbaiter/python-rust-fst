@@ -7,6 +7,7 @@ ffi.cdef("""
     /** ===============================
                    Utility
         =============================== **/
+
     typedef struct {
         bool  has_error;
         char* error_type;
@@ -33,6 +34,7 @@ ffi.cdef("""
     /** ===============================
                      Set
         =============================== **/
+
     typedef struct FileSetBuilder FileSetBuilder;
     typedef struct MemSetBuilder MemSetBuilder;
     typedef struct Set Set;
@@ -103,7 +105,7 @@ ffi.cdef("""
     typedef struct MemMapBuilder MemMapBuilder;
     typedef struct Map Map;
     typedef struct MapStream MapStream;
-    typedef struct LevMapStream LevMapStream;
+    typedef struct MapLevStream MapLevStream;
     typedef struct MapKeyStream MapKeyStream;
     typedef struct MapValueStream MapValueStream;
     typedef struct MapOpBuilder MapOpBuilder;
@@ -128,6 +130,7 @@ ffi.cdef("""
     MapStream* fst_map_stream(Map*);
     MapKeyStream* fst_map_keys(Map*);
     MapValueStream* fst_map_values(Map*);
+    MapLevStream* fst_map_levsearch(Map*, Levenshtein*);
 
     MapItem* fst_mapstream_next(MapStream*);
     void fst_mapstream_free(MapStream*);
@@ -138,6 +141,9 @@ ffi.cdef("""
 
     uint64_t fst_mapvalues_next(Context*, MapValueStream*);
     void fst_mapvalues_free(MapValueStream*);
+
+    MapItem* fst_map_levstream_next(MapLevStream*);
+    void fst_map_levstream_free(MapLevStream*);
 """)
 
 if __name__ == '__main__':

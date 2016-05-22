@@ -74,3 +74,8 @@ def test_map_iter(fst_map):
 def test_map_values(fst_map):
     values = list(fst_map.values())
     assert values == [v for _, v in sorted(TEST_ITEMS)]
+
+
+def test_map_search(fst_map):
+    matches = list(fst_map.search("bam", 1))
+    assert matches == [(u"bar", 2), (u"baz", 1337)]

@@ -21,6 +21,7 @@ pub type MemSetBuilder = SetBuilder<Vec<u8>>;
 pub type FileMapBuilder = MapBuilder<&'static mut io::BufWriter<File>>;
 pub type MemMapBuilder = MapBuilder<Vec<u8>>;
 pub type SetLevStream = set::Stream<'static, &'static Levenshtein>;
+pub type MapLevStream = map::Stream<'static, &'static Levenshtein>;
 
 
 /// Exposes information about errors over the ABI
@@ -497,3 +498,15 @@ pub extern fn fst_mapvalues_next(ctx: *mut Context,
         }
     }
 }
+
+#[no_mangle]
+pub extern fn fst_map_levsearch(map_ptr: *mut Map,
+                                lev_ptr: *mut Levenshtein)
+                                 -> *mut MapLevStream {
+    let map = mutref_from_ptr!(map_ptr);
+    let lev = ref_from_ptr!(lev_ptr);
+    to_raw_ptr(map.search(lev).into_stream())
+}
+make_free_fn!(fst_map_levstream_free, *mut MapLevStream);
+map_make_next_fn!(fst_map_levstream_next, *mut MapLevStream);
+
