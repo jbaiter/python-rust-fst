@@ -23,6 +23,24 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 - Run `python setup.py bdist_wheel` to generate a wheel
 - Install the wheel with `pip install dist/rust_fst-0.1-py3-none-any.whl`
 
+
+## Status
+### Set
+[x]  Create and load sets on disk and in memory
+[x]  Iterate through complete set contents
+[x]  Search sets with a Levenshtein automaton
+[x]  Perform set operations (union, [symmetric] difference, intersection)
+[ ]  Iterate through a range of set contents
+
+### Map
+[ ]  Create and load maps on disk and in memory
+[ ]  Iterate through complete map (key, value) pairs
+[ ]  Iterate through complete map keys and items
+[ ]  Search map keys with a Levenshtein automaton
+[ ]  Perform set operations (union, [symmetric] difference, intersection)
+     on the map
+[ ]  Iterate through a range of map contents
+
 [1]: http://blog.burntsushi.net/transducers/
 [2]: https://github.com/BurntSushi/fst
 [3]: http://burntsushi.net/rustdoc/fst/

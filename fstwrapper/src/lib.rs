@@ -305,16 +305,7 @@ pub extern fn fst_opbuilder_union(ptr: *mut OpBuilder<'static>)
     to_raw_ptr(ob.union())
 }
 make_free_fn!(fst_union_free, *mut Union<'static>);
-#[no_mangle]
-pub extern fn fst_union_next(ptr: *mut Union<'static>) -> *const libc::c_char {
-    let union = mutref_from_ptr!(ptr);
-    let next = union.next();
-    match next {
-        Some(val) => CString::new(val).unwrap().into_raw(),
-        None      => ptr::null()
-    }
-}
-//make_next_fn!(fst_union_next, *mut Union<'static>);
+make_next_fn!(fst_union_next, *mut Union<'static>);
 
 #[no_mangle]
 pub extern fn fst_opbuilder_intersection(ptr: *mut OpBuilder<'static>)

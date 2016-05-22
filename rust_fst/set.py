@@ -167,8 +167,9 @@ class FstSet(object):
         return self._make_opbuilder(*others).intersection()
 
     def difference(self, *others):
-        # TODO
-        raise NotImplementedError
+        # FIXME: There's a bug in here, it doesn't work as epxected at
+        #        the moment
+        return self._make_opbuilder(*others).difference()
 
     def symmetric_difference(self, *others):
         return self._make_opbuilder(*others).symmetric_difference()

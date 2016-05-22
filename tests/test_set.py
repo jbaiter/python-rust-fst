@@ -112,10 +112,28 @@ def test_levautomaton_too_big(fst_set):
         next(fst_set.search(u"a"*24, 24))
 
 
-def test_ops():
+def test_union():
     a = Set.from_iter(["bar", "foo"])
     b = Set.from_iter(["baz", "foo"])
     assert list(a.union(b)) == ["bar", "baz", "foo"]
-    assert list(a.intersection(b)) == ["foo"]
+
+
+@pytest.mark.skip(reason="currently broken upstream")
+def test_difference():
+    # This is currently broken upstream:
+    # https://github.com/BurntSushi/fst/issues/19
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    assert list(a.difference(b)) == ["bar"]
+
+
+def test_symmetric_difference():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
     assert list(a.symmetric_difference(b)) == ["bar", "baz"]
 
+
+def test_intersection():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    assert list(a.intersection(b)) == ["foo"]
