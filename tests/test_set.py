@@ -109,10 +109,7 @@ def test_union():
     assert list(a.union(b)) == ["bar", "baz", "foo"]
 
 
-@pytest.mark.skip(reason="currently broken upstream")
 def test_difference():
-    # This is currently broken upstream:
-    # https://github.com/BurntSushi/fst/issues/19
     a = Set.from_iter(["bar", "foo"])
     b = Set.from_iter(["baz", "foo"])
     assert list(a.difference(b)) == ["bar"]

@@ -33,6 +33,7 @@ pub struct Context {
     error_description: *const libc::c_char,
 }
 
+#[allow(dead_code)]
 pub struct MapItem {
     key: *const libc::c_char,
     value: libc::uint64_t
