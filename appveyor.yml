@@ -19,6 +19,10 @@ environment:
     - PYTHON: "C:\\Python35-x64"
       RUST_TARGET: "x86_64-pc-windows-msvc"
 
+init:
+    init:
+- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))<Paste>
+
 install:
   - "%PYTHON%\\python.exe -m pip install wheel cffi"
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:RUST_TARGET}.exe"
@@ -35,6 +39,9 @@ test_script:
 
 after_test:
   - ".build.cmd %PYTHON%\\python.exe setup.py bdist_wheel"
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 artifacts:
   - path: dist\*
