@@ -1,0 +1,40 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\Python27"
+      RUST_TARGET: "i686-pc-windows-msvc"
+    - PYTHON: "C:\\Python33"
+      RUST_TARGET: "i686-pc-windows-msvc"
+    - PYTHON: "C:\\Python34"
+      RUST_TARGET: "i686-pc-windows-msvc"
+    - PYTHON: "C:\\Python35"
+      RUST_TARGET: "i686-pc-windows-msvc"
+    - PYTHON: "C:\\Python27-x64"
+      RUST_TARGET: "x86_64-pc-windows-msvc"
+    - PYTHON: "C:\\Python33-x64"
+      DISTUTILS_USE_SDK: "1"
+      RUST_TARGET: "x86_64-pc-windows-msvc"
+    - PYTHON: "C:\\Python34-x64"
+      DISTUTILS_USE_SDK: "1"
+      RUST_TARGET: "x86_64-pc-windows-msvc"
+    - PYTHON: "C:\\Python35-x64"
+      RUST_TARGET: "x86_64-pc-windows-msvc"
+
+install:
+  - "%PYTHON%\\python.exe -m pip install wheel cffi"
+  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:RUST_TARGET}.exe"
+  - rust-nightly-%RUST_TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
+  - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
+  - SET PATH=%PATH%;C:\MinGW\bin
+  - rustc -V
+  - cargo -V
+
+build: off
+
+test_script:
+  - ".build.cmd %PYTHON%\\python.exe -m pytest"
+
+after_test:
+  - ".build.cmd %PYTHON%\\python.exe setup.py bdist_wheel"
+
+artifacts:
+  - path: dist\*

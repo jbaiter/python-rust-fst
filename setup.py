@@ -12,12 +12,15 @@ setup(
     keywords=['fst', 'rust', 'levenshtein', 'automata', 'transducer',
               'data_structures'],
     url='https://github.com/jbaiter/python-rust-fst',
-    setup_requires=['cffi>=1.0.0'],
+    setup_requires=[
+        'cffi>=1.0.0',
+        'pytest-runner'],
     install_requires=['cffi>=1.0.0'],
     cffi_modules=['rust_fst/_build_ffi.py:ffi'],
     entry_points={'distutils.setup_keywords': [
         'rust_crates = rust_setuptools:rust_crates'
     ]},
+    tests_require=['pytest'],
     rust_crates=[('fstwrapper', 'rust_fst')],
     packages=['rust_fst'],
     zip_safe=False,
