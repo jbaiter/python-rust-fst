@@ -20,16 +20,18 @@ class IoError(FstError):
 
 
 def find_library():
-    libname = "libfstwrapper"
+    libname = "fstwrapper"
     if sys.platform == 'win32':
+        prefix = ''
         suffix = 'dll'
     elif sys.platform == 'darwin':
+        prefix = 'lib'
         suffix = 'dylib'
     else:
+        prefix = 'lib'
         suffix = 'so'
     cur_dir = os.path.dirname(__file__)
-    build_types = ["release", "debug"]
-    return os.path.join(cur_dir, "{}.{}".format(libname, suffix))
+    return os.path.join(cur_dir, "{}{}.{}".format(prefix, libname, suffix))
 
 
 lib = ffi.dlopen(find_library())
