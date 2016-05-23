@@ -33,31 +33,33 @@ pub fn to_raw_ptr<T>(v: T) -> *mut T {
     Box::into_raw(Box::new(v))
 }
 
-/* FIXME: This requires the nightly channel, isn't there a better way to
- *        get this information? */
+// FIXME: This requires the nightly channel, isn't there a better way to
+//        get this information?
 pub fn get_typename<T>(_: &T) -> &'static str {
     unsafe { intrinsics::type_name::<T>() }
 }
 
 #[no_mangle]
-pub extern fn fst_context_new() -> *mut Context {
-    to_raw_ptr(Context { has_error: false,
-                         error_type: ptr::null(),
-                         error_description: ptr::null(),
-                         error_display: ptr::null(),
-                         error_debug: ptr::null() })
+pub extern "C" fn fst_context_new() -> *mut Context {
+    to_raw_ptr(Context {
+        has_error: false,
+        error_type: ptr::null(),
+        error_description: ptr::null(),
+        error_display: ptr::null(),
+        error_debug: ptr::null(),
+    })
 }
 make_free_fn!(fst_context_free, *mut Context);
 
 #[no_mangle]
-pub extern fn fst_string_free(s: *mut libc::c_char) {
+pub extern "C" fn fst_string_free(s: *mut libc::c_char) {
     unsafe { CString::from_raw(s) };
 }
 
 #[no_mangle]
-pub extern fn fst_bufwriter_new(ctx: *mut Context,
-                                s: *mut libc::c_char)
-                                -> *mut io::BufWriter<File> {
+pub extern "C" fn fst_bufwriter_new(ctx: *mut Context,
+                                    s: *mut libc::c_char)
+                                    -> *mut io::BufWriter<File> {
     let path = cstr_to_str(s);
     let file = with_context!(ctx, ptr::null_mut(), File::create(path));
     to_raw_ptr(io::BufWriter::new(file))
@@ -66,10 +68,10 @@ make_free_fn!(fst_bufwriter_free, *mut io::BufWriter<File>);
 
 
 #[no_mangle]
-pub extern fn fst_levenshtein_new(ctx: *mut Context,
-                                  c_key: *mut libc::c_char,
-                                  max_dist: libc::uint32_t)
-                                  -> *mut Levenshtein {
+pub extern "C" fn fst_levenshtein_new(ctx: *mut Context,
+                                      c_key: *mut libc::c_char,
+                                      max_dist: libc::uint32_t)
+                                      -> *mut Levenshtein {
     let key = cstr_to_str(c_key);
     let lev = with_context!(ctx, ptr::null_mut(),
                             Levenshtein::new(key, max_dist));
