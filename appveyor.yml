@@ -24,7 +24,7 @@ init:
   - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 install:
-  - "%PYTHON%\\python.exe -m pip install wheel cffi"
+  - "%PYTHON%\\python.exe -m pip install -U wheel cffi pytest distribute setuptools"
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:RUST_TARGET}.exe"
   - rust-nightly-%RUST_TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
@@ -32,13 +32,12 @@ install:
   - rustc -V
   - cargo -V
 
-build: off
+build:
+  - ".build.cmd %PYTHON%\\python setup.py bdist_wheel"
 
 test_script:
-  - ".build.cmd %PYTHON%\\python.exe -m pytest"
-
-after_test:
-  - ".build.cmd %PYTHON%\\python.exe setup.py bdist_wheel"
+  - ".build.cmd %PYTHON%\\python -m pip install rust_fst --no-index -f ./dist"
+  - ".build.cmd %PYTHON%\\python -m pytest"
 
 on_finish:
   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
