@@ -129,7 +129,8 @@ def build_install_lib_cmdclass(base=None):
 
 
 def rust_crates(dist, attr, value):
-    dist.is_pure = lambda: False
+    dist.has_ext_modules = lambda: True
+    dist.ext_modules = []
     dist.cmdclass['build_rust'] = build_rust_cmdclass(value)
     dist.cmdclass['install_lib'] = build_install_lib_cmdclass(
         dist.cmdclass.get('install_lib'))
