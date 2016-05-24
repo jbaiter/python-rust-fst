@@ -132,7 +132,7 @@ pub extern "C" fn fst_set_make_opbuilder(ptr: *mut Set) -> *mut set::OpBuilder<'
     let ob = set.op();
     to_raw_ptr(ob)
 }
-make_free_fn!(fst_set_opbuilder_free, *mut set::OpBuilder<'static>);
+make_free_fn!(fst_set_opbuilder_free, *mut set::OpBuilder);
 
 #[no_mangle]
 pub extern "C" fn fst_set_opbuilder_push(ptr: *mut set::OpBuilder, set_ptr: *mut Set) {
@@ -142,17 +142,17 @@ pub extern "C" fn fst_set_opbuilder_push(ptr: *mut set::OpBuilder, set_ptr: *mut
 }
 
 #[no_mangle]
-pub extern "C" fn fst_set_opbuilder_union(ptr: *mut set::OpBuilder<'static>)
-                                          -> *mut set::Union<'static> {
+pub extern "C" fn fst_set_opbuilder_union(ptr: *mut set::OpBuilder)
+                                          -> *mut set::Union {
     let ob = val_from_ptr!(ptr);
     to_raw_ptr(ob.union())
 }
-make_free_fn!(fst_set_union_free, *mut set::Union<'static>);
-set_make_next_fn!(fst_set_union_next, *mut set::Union<'static>);
+make_free_fn!(fst_set_union_free, *mut set::Union);
+set_make_next_fn!(fst_set_union_next, *mut set::Union);
 
 #[no_mangle]
-pub extern "C" fn fst_set_opbuilder_intersection(ptr: *mut set::OpBuilder<'static>)
-                                                 -> *mut set::Intersection<'static> {
+pub extern "C" fn fst_set_opbuilder_intersection(ptr: *mut set::OpBuilder)
+                                                 -> *mut set::Intersection {
     let ob = val_from_ptr!(ptr);
     to_raw_ptr(ob.intersection())
 }
@@ -160,8 +160,8 @@ make_free_fn!(fst_set_intersection_free, *mut set::Intersection);
 set_make_next_fn!(fst_set_intersection_next, *mut set::Intersection);
 
 #[no_mangle]
-pub extern "C" fn fst_set_opbuilder_difference(ptr: *mut set::OpBuilder<'static>)
-                                               -> *mut set::Difference<'static> {
+pub extern "C" fn fst_set_opbuilder_difference(ptr: *mut set::OpBuilder)
+                                               -> *mut set::Difference {
     let ob = val_from_ptr!(ptr);
     to_raw_ptr(ob.difference())
 }
@@ -170,8 +170,8 @@ set_make_next_fn!(fst_set_difference_next, *mut set::Difference);
 
 #[no_mangle]
 pub extern "C" fn fst_set_opbuilder_symmetricdifference
-    (ptr: *mut set::OpBuilder<'static>)
-     -> *mut set::SymmetricDifference<'static> {
+    (ptr: *mut set::OpBuilder)
+     -> *mut set::SymmetricDifference {
     let ob = val_from_ptr!(ptr);
     to_raw_ptr(ob.symmetric_difference())
 }
