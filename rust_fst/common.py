@@ -59,3 +59,22 @@ class MapItemStreamIterator(StreamIterator):
         lib.fst_string_free(itm.key)
         lib.fst_mapitem_free(itm)
         return (key, value)
+
+
+IndexedValue = namedtuple("IndexedValue", ("index", "value"))
+
+
+class MapOpItemStreamIterator(StreamIterator):
+    def __next__(self):
+        itm = self._next_fn(self._ptr)
+        if itm == ffi.NULL:
+            self._free()
+            raise StopIteration
+        key = ffi.string(itm.key).decode('utf8')
+        values = []
+        for n in range(itm.num_values):
+            v = itm.values[n]
+            values.append(IndexedValue(int(v.index), v.value))
+        lib.fst_string_free(itm.key)
+        lib.fst_map_opitem_free(itm)
+        return (key, tuple(values))

@@ -79,3 +79,38 @@ def test_map_values(fst_map):
 def test_map_search(fst_map):
     matches = list(fst_map.search("bam", 1))
     assert matches == [(u"bar", 2), (u"baz", 1337)]
+
+
+def test_map_union():
+    a = Map.from_iter({'bar': 8, 'baz': 16})
+    b = Map.from_iter({'bar': 32, 'moo': 64})
+    u = dict(a.union(b))
+    assert len(u) == 3
+    assert u['bar'] == ((0, 8), (1, 32))
+    assert u['baz'] == ((0, 16),)
+    assert u['moo'] == ((1, 64),)
+
+
+def test_map_intersection():
+    a = Map.from_iter({'bar': 8, 'baz': 16})
+    b = Map.from_iter({'bar': 32, 'moo': 64})
+    i = dict(a.intersection(b))
+    assert len(i) == 1
+    assert i['bar'] == ((0, 8), (1, 32))
+
+
+def test_map_difference():
+    a = Map.from_iter({'bar': 8, 'baz': 16})
+    b = Map.from_iter({'bar': 32, 'moo': 64})
+    d = dict(a.difference(b))
+    assert len(d) == 1
+    assert d['baz'] == ((0, 16),)
+
+
+def test_map_symmetric_difference():
+    a = Map.from_iter({'bar': 8, 'baz': 16})
+    b = Map.from_iter({'bar': 32, 'moo': 64})
+    s = dict(a.symmetric_difference(b))
+    assert len(s) == 2
+    assert s['baz'] == ((0, 16),)
+    assert s['moo'] == ((1, 64),)

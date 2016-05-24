@@ -70,6 +70,23 @@ macro_rules! map_make_next_fn {
     )
 }
 
+/// Declare a function that returns the next item from a map stream
+macro_rules! mapop_make_next_fn {
+    ($name:ident, $t:ty) => (
+        #[no_mangle]
+        pub extern fn $name(ptr: $t) -> *const MapOpItem {
+            let stream = mutref_from_ptr!(ptr);
+            match stream.next() {
+                Some((k, vs)) => to_raw_ptr(
+                    MapOpItem { key: ::std::ffi::CString::new(k).unwrap().into_raw(),
+                                num_values: vs.len(),
+                                values: vs.as_ptr()}),
+                None         => ::std::ptr::null_mut()
+            }
+        }
+    )
+}
+
 /// Evaluate an expression and in case of an error, store information about the error in the passed
 /// Context struct and return a default value.
 macro_rules! with_context {

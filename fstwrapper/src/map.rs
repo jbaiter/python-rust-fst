@@ -6,14 +6,26 @@ use std::io;
 use std::ptr;
 use fst::{IntoStreamer, Streamer, Levenshtein, Map, MapBuilder};
 use fst::map;
+use fst::raw;
 
 use util::{Context, str_to_cstr, cstr_to_str, to_raw_ptr};
 
 
+#[repr(C)]
+#[derive(Debug)]
 #[allow(dead_code)]
 pub struct MapItem {
     key: *const libc::c_char,
     value: libc::uint64_t,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct MapOpItem {
+    key: *const libc::c_char,
+    num_values: libc::size_t,
+    values: *const raw::IndexedValue
 }
 
 
@@ -162,3 +174,56 @@ pub extern "C" fn fst_map_levsearch(map_ptr: *mut Map,
 }
 make_free_fn!(fst_map_levstream_free, *mut MapLevStream);
 map_make_next_fn!(fst_map_levstream_next, *mut MapLevStream);
+
+#[no_mangle]
+pub extern "C" fn fst_map_make_opbuilder(ptr: *mut Map) -> *mut map::OpBuilder<'static> {
+    let map = ref_from_ptr!(ptr);
+    let ob = map.op();
+    to_raw_ptr(ob)
+}
+make_free_fn!(fst_map_opbuilder_free, *mut map::OpBuilder);
+make_free_fn!(fst_map_opitem_free, *mut MapOpItem);
+
+#[no_mangle]
+pub extern "C" fn fst_map_opbuilder_push(ptr: *mut map::OpBuilder, map_ptr: *mut Map) {
+    let map = ref_from_ptr!(map_ptr);
+    let ob = mutref_from_ptr!(ptr);
+    ob.push(map);
+}
+
+#[no_mangle]
+pub extern "C" fn fst_map_opbuilder_union(ptr: *mut map::OpBuilder)
+                                          -> *mut map::Union {
+    let ob = val_from_ptr!(ptr);
+    to_raw_ptr(ob.union())
+}
+make_free_fn!(fst_map_union_free, *mut map::Union);
+mapop_make_next_fn!(fst_map_union_next, *mut map::Union);
+
+#[no_mangle]
+pub extern "C" fn fst_map_opbuilder_intersection(ptr: *mut map::OpBuilder)
+                                                 -> *mut map::Intersection {
+    let ob = val_from_ptr!(ptr);
+    to_raw_ptr(ob.intersection())
+}
+make_free_fn!(fst_map_intersection_free, *mut map::Intersection);
+mapop_make_next_fn!(fst_map_intersection_next, *mut map::Intersection);
+
+#[no_mangle]
+pub extern "C" fn fst_map_opbuilder_difference(ptr: *mut map::OpBuilder)
+                                               -> *mut map::Difference {
+    let ob = val_from_ptr!(ptr);
+    to_raw_ptr(ob.difference())
+}
+make_free_fn!(fst_map_difference_free, *mut map::Difference);
+mapop_make_next_fn!(fst_map_difference_next, *mut map::Difference);
+
+#[no_mangle]
+pub extern "C" fn fst_map_opbuilder_symmetricdifference
+    (ptr: *mut map::OpBuilder)
+     -> *mut map::SymmetricDifference {
+    let ob = val_from_ptr!(ptr);
+    to_raw_ptr(ob.symmetric_difference())
+}
+make_free_fn!(fst_map_symmetricdifference_free, *mut map::SymmetricDifference);
+mapop_make_next_fn!(fst_map_symmetricdifference_next, *mut map::SymmetricDifference);

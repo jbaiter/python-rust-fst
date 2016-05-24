@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from .common import (KeyStreamIterator, ValueStreamIterator,
-                     MapItemStreamIterator)
+                     MapItemStreamIterator, MapOpItemStreamIterator)
 from .lib import ffi, lib, checked_call
 
 
@@ -68,25 +68,26 @@ class OpBuilder(object):
 
     def union(self):
         stream_ptr = lib.fst_map_opbuilder_union(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_map_union_next,
-                                lib.fst_map_union_free)
+        return MapOpItemStreamIterator(
+                stream_ptr, lib.fst_map_union_next, lib.fst_map_union_free)
 
     def intersection(self):
         stream_ptr = lib.fst_map_opbuilder_intersection(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_map_intersection_next,
-                                lib.fst_map_intersection_free)
+        return MapOpItemStreamIterator(
+                stream_ptr, lib.fst_map_intersection_next,
+                lib.fst_map_intersection_free)
 
     def difference(self):
         stream_ptr = lib.fst_map_opbuilder_difference(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_map_difference_next,
-                                lib.fst_map_difference_free)
+        return MapOpItemStreamIterator(
+            stream_ptr, lib.fst_map_difference_next,
+            lib.fst_map_difference_free)
 
     def symmetric_difference(self):
         stream_ptr = lib.fst_map_opbuilder_symmetricdifference(self._ptr)
-        return make_stream_iter(stream_ptr,
-                                lib.fst_map_symmetricdifference_next,
-                                lib.fst_map_symmetricdifference_free)
-
+        return MapOpItemStreamIterator(
+            stream_ptr, lib.fst_map_symmetricdifference_next,
+            lib.fst_map_symmetricdifference_free)
 
 
 class FstMap(object):
@@ -109,6 +110,8 @@ class FstMap(object):
 
     @classmethod
     def from_iter(cls, it, fpath=None):
+        if isinstance(it, dict):
+            it = sorted(it.items(), key=lambda x: x[0])
         with cls.build(fpath) as builder:
             for key, val in it:
                 builder.insert(key, val)
@@ -171,3 +174,21 @@ class FstMap(object):
         return MapItemStreamIterator(stream_ptr, lib.fst_map_levstream_next,
                                      lib.fst_map_levstream_free, lev_ptr,
                                      lib.fst_levenshtein_free)
+
+    def _make_opbuilder(self, *others):
+        opbuilder = OpBuilder(self._ptr)
+        for oth in others:
+            opbuilder.push(oth._ptr)
+        return opbuilder
+
+    def union(self, *others):
+        return self._make_opbuilder(*others).union()
+
+    def intersection(self, *others):
+        return self._make_opbuilder(*others).intersection()
+
+    def difference(self, *others):
+        return self._make_opbuilder(*others).difference()
+
+    def symmetric_difference(self, *others):
+        return self._make_opbuilder(*others).symmetric_difference()

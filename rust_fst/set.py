@@ -140,6 +140,15 @@ class FstSet(object):
     def __len__(self):
         return int(lib.fst_set_len(self._ptr))
 
+    def __getitem__(self, s):
+        if not isinstance(s, slice):
+            raise ValueError(
+                "Value must be a string slice (e.g. `['foo':]`)")
+        if s.start is not None and s.end is not None and s.start > s.end:
+            raise ValueError(
+                "Start key must be lexicographically smaller than end.")
+        raise NotImplementedError
+
     def _make_opbuilder(self, *others):
         opbuilder = OpBuilder(self._ptr)
         for oth in others:

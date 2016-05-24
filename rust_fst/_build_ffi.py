@@ -3,7 +3,6 @@ from cffi import FFI
 ffi = FFI()
 ffi.set_source('rust_fst._ffi', None)
 ffi.cdef("""
-
     /** ===============================
                    Utility
         =============================== **/
@@ -101,6 +100,18 @@ ffi.cdef("""
         uint64_t    value;
     } MapItem;
 
+    typedef struct {
+        size_t      index;
+        uint64_t    value;
+    } IndexedValue;
+
+    typedef struct {
+        char*           key;
+        size_t          num_values;
+        IndexedValue*   values;
+    } MapOpItem;
+
+
     typedef struct FileMapBuilder FileMapBuilder;
     typedef struct MemMapBuilder MemMapBuilder;
     typedef struct Map Map;
@@ -131,6 +142,7 @@ ffi.cdef("""
     MapKeyStream* fst_map_keys(Map*);
     MapValueStream* fst_map_values(Map*);
     MapLevStream* fst_map_levsearch(Map*, Levenshtein*);
+    MapOpBuilder* fst_map_make_opbuilder(Map*);
 
     MapItem* fst_mapstream_next(MapStream*);
     void fst_mapstream_free(MapStream*);
@@ -144,6 +156,27 @@ ffi.cdef("""
 
     MapItem* fst_map_levstream_next(MapLevStream*);
     void fst_map_levstream_free(MapLevStream*);
+
+    void fst_map_opbuilder_push(MapOpBuilder*, Map*);
+    void fst_map_opbuilder_free(MapOpBuilder*);
+    MapUnion* fst_map_opbuilder_union(MapOpBuilder*);
+    MapIntersection* fst_map_opbuilder_intersection(MapOpBuilder*);
+    MapDifference* fst_map_opbuilder_difference(MapOpBuilder*);
+    MapSymmetricDifference* fst_map_opbuilder_symmetricdifference(
+        MapOpBuilder*);
+    void fst_map_opitem_free(MapOpItem*);
+
+    MapOpItem* fst_map_union_next(MapUnion*);
+    void fst_map_union_free(MapUnion*);
+
+    MapOpItem* fst_map_intersection_next(MapIntersection*);
+    void fst_map_intersection_free(MapIntersection*);
+
+    MapOpItem* fst_map_difference_next(MapDifference*);
+    void fst_map_difference_free(MapDifference*);
+
+    MapOpItem* fst_map_symmetricdifference_next(MapSymmetricDifference*);
+    void fst_map_symmetricdifference_free(MapSymmetricDifference*);
 """)
 
 if __name__ == '__main__':
