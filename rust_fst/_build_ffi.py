@@ -17,9 +17,13 @@ ffi.cdef("""
 
     typedef struct BufWriter BufWriter;
     typedef struct Levenshtein Levenshtein;
+    typedef struct Regex Regex;
 
     Levenshtein* fst_levenshtein_new(Context*, char*, uint32_t);
     void fst_levenshtein_free(Levenshtein*);
+
+    Regex* fst_regex_new(Context*, char*);
+    void fst_regex_free(Regex*);
 
     Context* fst_context_new();
     void fst_context_free(Context*);
@@ -39,6 +43,7 @@ ffi.cdef("""
     typedef struct Set Set;
     typedef struct SetStream SetStream;
     typedef struct SetLevStream SetLevStream;
+    typedef struct SetRegexStream SetRegexStream;
     typedef struct SetOpBuilder SetOpBuilder;
     typedef struct SetUnion SetUnion;
     typedef struct SetIntersection SetIntersection;
@@ -62,6 +67,7 @@ ffi.cdef("""
     bool fst_set_issuperset(Set*, Set*);
     SetStream* fst_set_stream(Set*);
     SetLevStream* fst_set_levsearch(Set*, Levenshtein*);
+    SetRegexStream* fst_set_regexsearch(Set*, Regex*);
     SetOpBuilder* fst_set_make_opbuilder(Set*);
     void fst_set_free(Set*);
 
@@ -70,6 +76,9 @@ ffi.cdef("""
 
     char* fst_set_levstream_next(SetLevStream*);
     void fst_set_levstream_free(SetLevStream*);
+
+    char* fst_set_regexstream_next(SetRegexStream*);
+    void fst_set_regexstream_free(SetRegexStream*);
 
     void fst_set_opbuilder_push(SetOpBuilder*, Set*);
     void fst_set_opbuilder_free(SetOpBuilder*);

@@ -32,7 +32,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 - [x]  Search sets with a Levenshtein automaton
 - [x]  Perform set operations (union, [symmetric] difference, intersection)
 - [X]  Iterate through a range of set contents
-- [ ]  Search sets with a regular expression
+- [X]  Search sets with a regular expression
 
 ### Map
 - [X]  Create and load maps on disk and in memory

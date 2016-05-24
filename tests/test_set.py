@@ -105,6 +105,16 @@ def test_levautomaton_too_big(fst_set):
         next(fst_set.search("a"*24, 24))
 
 
+def test_search_re(fst_set):
+    matches = list(fst_set.search_re(r'ba.*'))
+    assert matches == ["bar", "baz"]
+
+
+def test_bad_pattern(fst_set):
+    with pytest.raises(lib.RegexError):
+        list(fst_set.search_re(r'ba.*?'))
+
+
 def test_union():
     a = Set.from_iter(["bar", "foo"])
     b = Set.from_iter(["baz", "foo"])

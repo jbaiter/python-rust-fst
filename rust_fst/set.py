@@ -185,6 +185,36 @@ class FstSet(object):
     def isdisjoint(self, other):
         return bool(lib.fst_set_isdisjoint(self._ptr, other._ptr))
 
+    def search_re(self, pattern):
+        """ Search the set with a regular expression.
+
+        Note that the regular expression syntax is not Python's, but the one
+        supported by the `regex` Rust crate, which is almost identical
+        to the engine of the RE2 engine.
+
+        For a documentation of the syntax, see:
+        http://doc.rust-lang.org/regex/regex/index.html#syntax
+
+        Due to limitations of the underlying FST, only a subset of this syntax
+        is supported. Most notably absent are:
+            - Lazy quantifiers (r'*?', r'+?')
+            - Word boundaries (r'\b')
+            - Other zero-width assertions (r'^', r'$')
+        For background on these limitations, consult the documentation of
+        the Rust crate: http://burntsushi.net/rustdoc/fst/struct.Regex.html
+
+        :param pattern:     A regular expression
+        :returns:           An iterator over all matching keys in the set
+        :rtype:             :py:class:`KeyStreamIterator`
+        """
+        re_ptr = checked_call(
+            lib.fst_regex_new, self._ctx,
+            ffi.new("char[]", pattern.encode('utf8')))
+        stream_ptr = lib.fst_set_regexsearch(self._ptr, re_ptr)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_regexstream_next,
+                                 lib.fst_set_regexstream_free, re_ptr,
+                                 lib.fst_regex_free)
+
     def search(self, term, max_dist):
         """ Search the set with a Levenshtein automaton.
 

@@ -7,7 +7,7 @@ use std::fs::File;
 use std::intrinsics;
 use std::io;
 use std::ptr;
-use fst::Levenshtein;
+use fst::{Levenshtein,Regex};
 
 
 /// Exposes information about errors over the ABI
@@ -78,3 +78,11 @@ pub extern "C" fn fst_levenshtein_new(ctx: *mut Context,
     to_raw_ptr(lev)
 }
 make_free_fn!(fst_levenshtein_free, *mut Levenshtein);
+
+#[no_mangle]
+pub extern "C" fn fst_regex_new(ctx: *mut Context, c_pat: *mut libc::c_char) -> *mut Regex {
+    let pat = cstr_to_str(c_pat);
+    let re = with_context!(ctx, ptr::null_mut(), Regex::new(pat));
+    to_raw_ptr(re)
+}
+make_free_fn!(fst_regex_free, *mut Regex);
