@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
-from .lib import ffi, lib, make_stream_iter, checked_call
+from .common import KeyStreamIterator
+from .lib import ffi, lib, checked_call
 
 
 class SetBuilder(object):
@@ -65,24 +66,24 @@ class OpBuilder(object):
 
     def union(self):
         stream_ptr = lib.fst_set_opbuilder_union(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_set_union_next,
-                                lib.fst_set_union_free)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_union_next,
+                                 lib.fst_set_union_free)
 
     def intersection(self):
         stream_ptr = lib.fst_set_opbuilder_intersection(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_set_intersection_next,
-                                lib.fst_set_intersection_free)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_intersection_next,
+                                 lib.fst_set_intersection_free)
 
     def difference(self):
         stream_ptr = lib.fst_set_opbuilder_difference(self._ptr)
-        return make_stream_iter(stream_ptr, lib.fst_set_difference_next,
-                                lib.fst_set_difference_free)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_difference_next,
+                                 lib.fst_set_difference_free)
 
     def symmetric_difference(self):
         stream_ptr = lib.fst_set_opbuilder_symmetricdifference(self._ptr)
-        return make_stream_iter(stream_ptr,
-                                lib.fst_set_symmetricdifference_next,
-                                lib.fst_set_symmetricdifference_free)
+        return KeyStreamIterator(stream_ptr,
+                                 lib.fst_set_symmetricdifference_next,
+                                 lib.fst_set_symmetricdifference_free)
 
 
 class FstSet(object):
@@ -133,13 +134,8 @@ class FstSet(object):
 
     def __iter__(self):
         stream_ptr = lib.fst_set_stream(self._ptr)
-        while True:
-            c_str = lib.fst_set_stream_next(stream_ptr)
-            if c_str == ffi.NULL:
-                break
-            yield ffi.string(c_str).decode('utf8')
-            lib.fst_string_free(c_str)
-        lib.fst_set_stream_free(stream_ptr)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_stream_next,
+                                 lib.fst_set_stream_free)
 
     def __len__(self):
         return int(lib.fst_set_len(self._ptr))
@@ -157,8 +153,6 @@ class FstSet(object):
         return self._make_opbuilder(*others).intersection()
 
     def difference(self, *others):
-        # FIXME: There's a bug in here, it doesn't work as epxected at
-        #        the moment
         return self._make_opbuilder(*others).difference()
 
     def symmetric_difference(self, *others):
@@ -178,18 +172,13 @@ class FstSet(object):
 
         :param term:        The search term
         :param max_dist:    The maximum edit distance for search results
-        :returns:           Matching values in the set
-        :rtype:             generator that yields str
+        :returns:           Iterator over matching values in the set
+        :rtype:             KeyStreamIterator
         """
         lev_ptr = checked_call(
             lib.fst_levenshtein_new, self._ctx,
             ffi.new("char[]", term.encode('utf8')), max_dist)
         stream_ptr = lib.fst_set_levsearch(self._ptr, lev_ptr)
-        while True:
-            c_str = lib.fst_set_levstream_next(stream_ptr)
-            if c_str == ffi.NULL:
-                break
-            yield ffi.string(c_str).decode('utf8')
-            lib.fst_string_free(c_str)
-        lib.fst_set_levstream_free(stream_ptr)
-        lib.fst_levenshtein_free(lev_ptr)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_levstream_next,
+                                 lib.fst_set_levstream_free, lev_ptr,
+                                 lib.fst_levenshtein_free)

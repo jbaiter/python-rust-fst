@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 
-from .lib import ffi, lib, make_stream_iter, checked_call
+from .common import (KeyStreamIterator, ValueStreamIterator,
+                     MapItemStreamIterator)
+from .lib import ffi, lib, checked_call
 
 
 class MapBuilder(object):
@@ -13,7 +15,7 @@ class MapBuilder(object):
 
 class FileMapBuilder(MapBuilder):
     def __init__(self, fpath):
-        self._ctx = lib.fst_context_new();
+        self._ctx = lib.fst_context_new()
         self._writer_p = checked_call(
             lib.fst_bufwriter_new, self._ctx, fpath.encode('utf8'))
         self._builder_p = checked_call(
@@ -33,7 +35,7 @@ class FileMapBuilder(MapBuilder):
 
 class MemMapBuilder(MapBuilder):
     def __init__(self):
-        self._ctx = lib.fst_context_new();
+        self._ctx = lib.fst_context_new()
         self._ptr = lib.fst_memmapbuilder_new()
         self._map_ptr = None
 
@@ -141,33 +143,18 @@ class FstMap(object):
 
     def keys(self):
         stream_ptr = lib.fst_map_keys(self._ptr)
-        while True:
-            c_str = lib.fst_mapkeys_next(stream_ptr)
-            if c_str == ffi.NULL:
-                break
-            yield ffi.string(c_str).decode('utf8')
-            lib.fst_string_free(c_str)
-        lib.fst_mapkeys_free(stream_ptr)
+        return KeyStreamIterator(stream_ptr, lib.fst_mapkeys_next,
+                                 lib.fst_mapkeys_free)
 
     def values(self):
         stream_ptr = lib.fst_map_values(self._ptr)
-        while True:
-            val = lib.fst_mapvalues_next(self._ctx, stream_ptr)
-            if val == 0 and self._ctx.has_error:
-                break
-            yield val
-        lib.fst_mapvalues_free(stream_ptr)
+        return ValueStreamIterator(stream_ptr, lib.fst_mapvalues_next,
+                                   lib.fst_mapvalues_free, ctx_ptr=self._ctx)
 
     def items(self):
         stream_ptr = lib.fst_map_stream(self._ptr)
-        while True:
-            itm = lib.fst_mapstream_next(stream_ptr)
-            if itm == ffi.NULL:
-                break
-            c_key = ffi.string(itm.key).decode('utf8')
-            yield (c_key, itm.value)
-            lib.fst_mapitem_free(itm)
-        lib.fst_mapstream_free(stream_ptr)
+        return MapItemStreamIterator(stream_ptr, lib.fst_mapstream_next,
+                                     lib.fst_mapstream_free)
 
     def search(self, term, max_dist):
         """ Search the map keys with a Levenshtein automaton.
@@ -175,18 +162,12 @@ class FstMap(object):
         :param term:        The search term
         :param max_dist:    The maximum edit distance for search results
         :returns:           Matching (key, value) items in the map
-        :rtype:             generator that yields (str, int) tuples
+        :rtype:             :py:class:`MapItemStreamIterator`
         """
         lev_ptr = checked_call(
             lib.fst_levenshtein_new, self._ctx,
             ffi.new("char[]", term.encode('utf8')), max_dist)
         stream_ptr = lib.fst_map_levsearch(self._ptr, lev_ptr)
-        while True:
-            itm = lib.fst_map_levstream_next(stream_ptr)
-            if itm == ffi.NULL:
-                break
-            c_key = ffi.string(itm.key).decode('utf8')
-            yield (c_key, itm.value)
-            lib.fst_mapitem_free(itm)
-        lib.fst_map_levstream_free(stream_ptr)
-        lib.fst_levenshtein_free(lev_ptr)
+        return MapItemStreamIterator(stream_ptr, lib.fst_map_levstream_next,
+                                     lib.fst_map_levstream_free, lev_ptr,
+                                     lib.fst_levenshtein_free)
