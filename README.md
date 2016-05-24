@@ -31,7 +31,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 - [x]  Iterate through complete set contents
 - [x]  Search sets with a Levenshtein automaton
 - [x]  Perform set operations (union, [symmetric] difference, intersection)
-- [ ]  Iterate through a range of set contents
+- [X]  Iterate through a range of set contents
 - [ ]  Search sets with a regular expression
 
 ### Map
@@ -41,7 +41,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 - [X]  Search map items with a Levenshtein automaton
 - [X]  Perform set operations (union, [symmetric] difference, intersection)
        on the map
-- [ ]  Iterate through a range of map contents
+- [X]  Iterate through a range of map contents
 - [ ]  Search map items with a regular expression
 
 [1]: http://blog.burntsushi.net/transducers/

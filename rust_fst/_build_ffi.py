@@ -130,6 +130,7 @@ ffi.cdef("""
     typedef struct MapIntersection MapIntersection;
     typedef struct MapDifference MapDifference;
     typedef struct MapSymmetricDifference MapSymmetricDifference;
+    typedef struct MapStreamBuilder MapStreamBuilder;
 
     FileMapBuilder* fst_filemapbuilder_new(Context*, BufWriter*);
     bool fst_filemapbuilder_insert(Context*, FileMapBuilder*, char*, uint64_t);
@@ -183,6 +184,11 @@ ffi.cdef("""
 
     MapOpItem* fst_map_symmetricdifference_next(MapSymmetricDifference*);
     void fst_map_symmetricdifference_free(MapSymmetricDifference*);
+
+    MapStreamBuilder* fst_map_streambuilder_new(Map*);
+    MapStreamBuilder* fst_map_streambuilder_add_ge(MapStreamBuilder*, char*);
+    MapStreamBuilder* fst_map_streambuilder_add_lt(MapStreamBuilder*, char*);
+    MapStream* fst_map_streambuilder_finish(MapStreamBuilder*);
 """)
 
 if __name__ == '__main__':

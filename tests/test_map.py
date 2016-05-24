@@ -114,3 +114,11 @@ def test_map_symmetric_difference():
     assert len(s) == 2
     assert s['baz'] == ((0, 16),)
     assert s['moo'] == ((1, 64),)
+
+
+def test_range(fst_map):
+    assert dict(fst_map['f':]) == {'foo': 2**16, u'möö': 1}
+    assert dict(fst_map[:'m']) == {'bar': 2, 'baz': 1337, 'foo': 2**16}
+    assert dict(fst_map['baz':'m']) == {'baz': 1337, 'foo': 2**16}
+    with pytest.raises(ValueError):
+        fst_map['c':'a']

@@ -227,3 +227,33 @@ pub extern "C" fn fst_map_opbuilder_symmetricdifference
 }
 make_free_fn!(fst_map_symmetricdifference_free, *mut map::SymmetricDifference);
 mapop_make_next_fn!(fst_map_symmetricdifference_next, *mut map::SymmetricDifference);
+
+
+#[no_mangle]
+pub extern "C" fn fst_map_streambuilder_new(ptr: *mut Map) -> *mut map::StreamBuilder<'static> {
+    let map = ref_from_ptr!(ptr);
+    to_raw_ptr(map.range())
+}
+
+#[no_mangle]
+pub extern "C" fn fst_map_streambuilder_add_ge(ptr: *mut map::StreamBuilder<'static>,
+                                               c_bound: *mut libc::c_char)
+                                               -> *mut map::StreamBuilder<'static> {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.ge(cstr_to_str(c_bound)))
+}
+
+#[no_mangle]
+pub extern "C" fn fst_map_streambuilder_add_lt(ptr: *mut map::StreamBuilder<'static>,
+                                               c_bound: *mut libc::c_char)
+                                               -> *mut map::StreamBuilder<'static> {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.lt(cstr_to_str(c_bound)))
+}
+
+#[no_mangle]
+pub extern "C" fn fst_map_streambuilder_finish(ptr: *mut map::StreamBuilder<'static>)
+                                               -> *mut map::Stream {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.into_stream())
+}

@@ -135,8 +135,24 @@ class FstMap(object):
             self._ptr, ffi.new("char[]", val.encode('utf8')))
 
     def __getitem__(self, key):
-        return checked_call(lib.fst_map_get, self._ctx, self._ptr,
-                            ffi.new("char[]", key.encode('utf8')))
+        if isinstance(key, slice):
+            s = key
+            if s.start and s.stop and s.start > s.stop:
+                raise ValueError(
+                    "Start key must be lexicographically smaller than stop.")
+            sb_ptr = lib.fst_map_streambuilder_new(self._ptr)
+            if s.start:
+                c_start = ffi.new("char[]", s.start.encode('utf8'))
+                sb_ptr = lib.fst_map_streambuilder_add_ge(sb_ptr, c_start)
+            if s.stop:
+                c_stop = ffi.new("char[]", s.stop.encode('utf8'))
+                sb_ptr = lib.fst_map_streambuilder_add_lt(sb_ptr, c_stop)
+            stream_ptr = lib.fst_map_streambuilder_finish(sb_ptr)
+            return MapItemStreamIterator(stream_ptr, lib.fst_mapstream_next,
+                                         lib.fst_mapstream_free)
+        else:
+            return checked_call(lib.fst_map_get, self._ctx, self._ptr,
+                                ffi.new("char[]", key.encode('utf8')))
 
     def __iter__(self):
         return self.keys()
