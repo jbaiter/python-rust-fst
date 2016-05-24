@@ -53,8 +53,8 @@ chmod +x /tmp/rustup.sh
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
-    ${PYBIN}/pip install pytest
-    ${PYBIN}/pip wheel /io/ -w wheelhouse/
+    ${PYBIN}/python -m pip install pytest
+    ${PYBIN}/python -m pip  wheel /io/ -w wheelhouse/
 done
 
 # Move pure wheels to output wheelhouse
@@ -71,8 +71,8 @@ chmod -R a+rw /io/wheelhouse
 
 # Install packages and test
 for PYBIN in /opt/python/*/bin/; do
-    ${PYBIN}/pip install rust_fst --no-index -f /io/wheelhouse
-    ${PYBIN}/py.test --verbose /io/tests
+    ${PYBIN}/python -m pip install rust_fst --no-index -f /io/wheelhouse
+    ${PYBIN}/python -m pytest --verbose /io/tests
     rm -f /io/rust_fst/_ffi.py
     find /io -name "__pycache__" -type d -print0 |xargs rm -rf --
     find /io -name "*.pyc" -type f -print0 |xargs rm -rf --
