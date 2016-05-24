@@ -13,7 +13,7 @@ class SetBuilder(object):
 
 class FileSetBuilder(SetBuilder):
     def __init__(self, fpath):
-        self._ctx = lib.fst_context_new();
+        self._ctx = lib.fst_context_new()
         self._writer_p = checked_call(
             lib.fst_bufwriter_new, self._ctx, fpath.encode('utf8'))
         self._builder_p = checked_call(
@@ -33,7 +33,7 @@ class FileSetBuilder(SetBuilder):
 
 class MemSetBuilder(SetBuilder):
     def __init__(self):
-        self._ctx = lib.fst_context_new();
+        self._ctx = lib.fst_context_new()
         self._ptr = lib.fst_memsetbuilder_new()
         self._set_ptr = None
 
