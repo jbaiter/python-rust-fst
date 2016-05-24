@@ -35,11 +35,6 @@ class RustBuildCommand(Command):
         pass
 
     def run(self):
-        if self.debug:
-            debug_or_release = '--debug'
-        else:
-            debug_or_release = '--release'
-
         # Make sure that if pythonXX-sys is used, it builds against the
         # current executing python interpreter.
         bindir = os.path.dirname(sys.executable)
@@ -61,8 +56,10 @@ class RustBuildCommand(Command):
             # Execute cargo.
             try:
                 toml = os.path.join(crate_path, 'Cargo.toml')
-                args = (['cargo', 'build', '--manifest-path', toml,
-                    debug_or_release] + list(self.extra_cargo_args or []))
+                args = ['cargo', 'build', '--manifest-path', toml]
+                if not self.debug:
+                    args.append('--release')
+                args.extend(list(self.extra_cargo_args or []))
                 if not self.quiet:
                     print(' '.join(args), file=sys.stderr)
                 output = subprocess.check_output(args, env=env)
@@ -70,8 +67,9 @@ class RustBuildCommand(Command):
                 msg = 'cargo failed with code: %d\n%s' % (e.returncode, e.output)
                 raise Exception(msg)
             except OSError:
-                raise Exception('Unable to execute cargo - this package '
-                    'requires rust to be installed and cargo to be on the PATH')
+                raise Exception(
+                    'Unable to execute cargo - this package requires rust to '
+                    'be installed and cargo to be on the PATH')
 
             if not self.quiet:
                 print(output, file=sys.stderr)
