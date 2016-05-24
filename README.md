@@ -1,5 +1,8 @@
 # python-rust-fst
 
+![https://ci.appveyor.com/api/projects/status/github/jbaiter/python-rust-fst]
+![https://travis-ci.org/jbaiter/python-rust-fst.svg]
+
 Python bindings for [burntsushi's][1] [fst crate][2] ([rustdocs][3])
 for FST-backed sets and maps.
 
