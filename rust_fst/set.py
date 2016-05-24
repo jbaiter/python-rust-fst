@@ -144,10 +144,19 @@ class FstSet(object):
         if not isinstance(s, slice):
             raise ValueError(
                 "Value must be a string slice (e.g. `['foo':]`)")
-        if s.start is not None and s.end is not None and s.start > s.end:
+        if s.start and s.stop and s.start > s.stop:
             raise ValueError(
-                "Start key must be lexicographically smaller than end.")
-        raise NotImplementedError
+                "Start key must be lexicographically smaller than stop.")
+        sb_ptr = lib.fst_set_streambuilder_new(self._ptr)
+        if s.start:
+            c_start = ffi.new("char[]", s.start.encode('utf8'))
+            sb_ptr = lib.fst_set_streambuilder_add_ge(sb_ptr, c_start)
+        if s.stop:
+            c_stop = ffi.new("char[]", s.stop.encode('utf8'))
+            sb_ptr = lib.fst_set_streambuilder_add_lt(sb_ptr, c_stop)
+        stream_ptr = lib.fst_set_streambuilder_finish(sb_ptr)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_stream_next,
+                                 lib.fst_set_stream_free)
 
     def _make_opbuilder(self, *others):
         opbuilder = OpBuilder(self._ptr)

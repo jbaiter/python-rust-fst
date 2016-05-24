@@ -44,6 +44,7 @@ ffi.cdef("""
     typedef struct SetIntersection SetIntersection;
     typedef struct SetDifference SetDifference;
     typedef struct SetSymmetricDifference SetSymmetricDifference;
+    typedef struct SetStreamBuilder SetStreamBuilder;
 
     FileSetBuilder* fst_filesetbuilder_new(Context*, BufWriter*);
     void fst_filesetbuilder_insert(Context*, FileSetBuilder*, char*);
@@ -75,7 +76,8 @@ ffi.cdef("""
     SetUnion* fst_set_opbuilder_union(SetOpBuilder*);
     SetIntersection* fst_set_opbuilder_intersection(SetOpBuilder*);
     SetDifference* fst_set_opbuilder_difference(SetOpBuilder*);
-    SetSymmetricDifference* fst_set_opbuilder_symmetricdifference(SetOpBuilder*);
+    SetSymmetricDifference* fst_set_opbuilder_symmetricdifference(
+        SetOpBuilder*);
 
     char* fst_set_union_next(SetUnion*);
     void fst_set_union_free(SetUnion*);
@@ -89,6 +91,10 @@ ffi.cdef("""
     char* fst_set_symmetricdifference_next(SetSymmetricDifference*);
     void fst_set_symmetricdifference_free(SetSymmetricDifference*);
 
+    SetStreamBuilder* fst_set_streambuilder_new(Set*);
+    SetStreamBuilder* fst_set_streambuilder_add_ge(SetStreamBuilder*, char*);
+    SetStreamBuilder* fst_set_streambuilder_add_lt(SetStreamBuilder*, char*);
+    SetStream* fst_set_streambuilder_finish(SetStreamBuilder*);
 
 
     /** ===============================

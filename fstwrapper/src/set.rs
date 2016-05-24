@@ -177,3 +177,33 @@ pub extern "C" fn fst_set_opbuilder_symmetricdifference
 }
 make_free_fn!(fst_set_symmetricdifference_free, *mut set::SymmetricDifference);
 set_make_next_fn!(fst_set_symmetricdifference_next, *mut set::SymmetricDifference);
+
+
+#[no_mangle]
+pub extern "C" fn fst_set_streambuilder_new(ptr: *mut Set) -> *mut set::StreamBuilder<'static> {
+    let set = ref_from_ptr!(ptr);
+    to_raw_ptr(set.range())
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_streambuilder_add_ge(ptr: *mut set::StreamBuilder<'static>,
+                                               c_bound: *mut libc::c_char)
+                                               -> *mut set::StreamBuilder<'static> {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.ge(cstr_to_str(c_bound)))
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_streambuilder_add_lt(ptr: *mut set::StreamBuilder<'static>,
+                                               c_bound: *mut libc::c_char)
+                                               -> *mut set::StreamBuilder<'static> {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.lt(cstr_to_str(c_bound)))
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_streambuilder_finish(ptr: *mut set::StreamBuilder<'static>)
+                                               -> *mut set::Stream {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.into_stream())
+}

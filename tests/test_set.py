@@ -5,7 +5,7 @@ import rust_fst.lib as lib
 from rust_fst import Set
 
 
-TEST_KEYS = [u"möö", u"bar", u"baz", u"foo"]
+TEST_KEYS = [u"möö", "bar", "baz", "foo"]
 
 
 def do_build(path, keys=TEST_KEYS, sorted_=True):
@@ -40,16 +40,18 @@ def test_build_baddir():
             for key in sorted(TEST_KEYS):
                 builder.insert(key)
 
+
 def test_build_memory():
     memset = Set.from_iter(sorted(TEST_KEYS))
     assert len(memset) == 4
+
 
 def test_load_badfile(tmpdir):
     bad_path = tmpdir.join("bad.fst")
     with bad_path.open('wb') as fp:
         fp.write(b'\xFF'*16)
     with pytest.raises(lib.TransducerError):
-        fst_set = Set(str(bad_path))
+        Set(str(bad_path))
 
 
 def test_iter(fst_set):
@@ -95,12 +97,12 @@ def test_isdisjoint(tmpdir, fst_set):
 
 def test_search(fst_set):
     matches = list(fst_set.search("bam", 1))
-    assert matches == [u"bar", u"baz"]
+    assert matches == ["bar", "baz"]
 
 
 def test_levautomaton_too_big(fst_set):
     with pytest.raises(lib.LevenshteinError):
-        next(fst_set.search(u"a"*24, 24))
+        next(fst_set.search("a"*24, 24))
 
 
 def test_union():
@@ -125,3 +127,13 @@ def test_intersection():
     a = Set.from_iter(["bar", "foo"])
     b = Set.from_iter(["baz", "foo"])
     assert list(a.intersection(b)) == ["foo"]
+
+
+def test_range(fst_set):
+    assert list(fst_set['f':]) == ['foo', u'möö']
+    assert list(fst_set[:'m']) == ['bar', 'baz', 'foo']
+    assert list(fst_set['baz':'m']) == ['baz', 'foo']
+    with pytest.raises(ValueError):
+        fst_set['c':'a']
+    with pytest.raises(ValueError):
+        fst_set['c']
