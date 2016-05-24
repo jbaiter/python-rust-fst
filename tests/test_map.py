@@ -81,6 +81,16 @@ def test_map_search(fst_map):
     assert matches == [(u"bar", 2), (u"baz", 1337)]
 
 
+def test_search_re(fst_map):
+    matches = dict(fst_map.search_re(r'ba.*'))
+    assert matches == {"bar": 2, "baz": 1337}
+
+
+def test_bad_pattern(fst_map):
+    with pytest.raises(lib.RegexError):
+        list(fst_map.search_re(r'ba.*?'))
+
+
 def test_map_union():
     a = Map.from_iter({'bar': 8, 'baz': 16})
     b = Map.from_iter({'bar': 32, 'moo': 64})

@@ -26,23 +26,10 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 
 
 ## Status
-### Set
-- [x]  Create and load sets on disk and in memory
-- [x]  Iterate through complete set contents
-- [x]  Search sets with a Levenshtein automaton
-- [x]  Perform set operations (union, [symmetric] difference, intersection)
-- [X]  Iterate through a range of set contents
-- [X]  Search sets with a regular expression
+The package exposes almost all functionality of the `fst` crate, except for:
 
-### Map
-- [X]  Create and load maps on disk and in memory
-- [X]  Iterate through complete map (key, value) pairs
-- [X]  Iterate through complete map keys and items
-- [X]  Search map items with a Levenshtein automaton
-- [X]  Perform set operations (union, [symmetric] difference, intersection)
-       on the map
-- [X]  Iterate through a range of map contents
-- [ ]  Search map items with a regular expression
+- Combining the results of slicing, `search` and `search_re` with set operations
+- Using raw transducers
 
 [1]: http://blog.burntsushi.net/transducers/
 [2]: https://github.com/BurntSushi/fst

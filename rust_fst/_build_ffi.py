@@ -132,6 +132,7 @@ ffi.cdef("""
     typedef struct Map Map;
     typedef struct MapStream MapStream;
     typedef struct MapLevStream MapLevStream;
+    typedef struct MapRegexStream MapRegexStream;
     typedef struct MapKeyStream MapKeyStream;
     typedef struct MapValueStream MapValueStream;
     typedef struct MapOpBuilder MapOpBuilder;
@@ -158,6 +159,7 @@ ffi.cdef("""
     MapKeyStream* fst_map_keys(Map*);
     MapValueStream* fst_map_values(Map*);
     MapLevStream* fst_map_levsearch(Map*, Levenshtein*);
+    MapRegexStream* fst_map_regexsearch(Map*, Regex*);
     MapOpBuilder* fst_map_make_opbuilder(Map*);
 
     MapItem* fst_mapstream_next(MapStream*);
@@ -172,6 +174,9 @@ ffi.cdef("""
 
     MapItem* fst_map_levstream_next(MapLevStream*);
     void fst_map_levstream_free(MapLevStream*);
+
+    MapItem* fst_map_regexstream_next(MapRegexStream*);
+    void fst_map_regexstream_free(MapRegexStream*);
 
     void fst_map_opbuilder_push(MapOpBuilder*, Map*);
     void fst_map_opbuilder_free(MapOpBuilder*);

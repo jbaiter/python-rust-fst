@@ -4,7 +4,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io;
 use std::ptr;
-use fst::{IntoStreamer, Streamer, Levenshtein, Map, MapBuilder};
+use fst::{IntoStreamer, Streamer, Levenshtein, Regex, Map, MapBuilder};
 use fst::map;
 use fst::raw;
 
@@ -32,6 +32,7 @@ pub struct MapOpItem {
 pub type FileMapBuilder = MapBuilder<&'static mut io::BufWriter<File>>;
 pub type MemMapBuilder = MapBuilder<Vec<u8>>;
 pub type MapLevStream = map::Stream<'static, &'static Levenshtein>;
+pub type MapRegexStream = map::Stream<'static, &'static Regex>;
 
 
 #[no_mangle]
@@ -174,6 +175,18 @@ pub extern "C" fn fst_map_levsearch(map_ptr: *mut Map,
 }
 make_free_fn!(fst_map_levstream_free, *mut MapLevStream);
 map_make_next_fn!(fst_map_levstream_next, *mut MapLevStream);
+
+
+#[no_mangle]
+pub extern "C" fn fst_map_regexsearch(map_ptr: *mut Map, regex_ptr: *mut Regex)
+                                      -> *mut MapRegexStream {
+    let map = mutref_from_ptr!(map_ptr);
+    let regex = ref_from_ptr!(regex_ptr);
+    to_raw_ptr(map.search(regex).into_stream())
+}
+make_free_fn!(fst_map_regexstream_free, *mut MapRegexStream);
+map_make_next_fn!(fst_map_regexstream_next, *mut MapRegexStream);
+
 
 #[no_mangle]
 pub extern "C" fn fst_map_make_opbuilder(ptr: *mut Map) -> *mut map::OpBuilder<'static> {

@@ -175,8 +175,39 @@ class FstMap(object):
         return MapItemStreamIterator(stream_ptr, lib.fst_mapstream_next,
                                      lib.fst_mapstream_free)
 
+    def search_re(self, pattern):
+        """ Search the map with a regular expression.
+
+        Note that the regular expression syntax is not Python's, but the one
+        supported by the `regex` Rust crate, which is almost identical
+        to the engine of the RE2 engine.
+
+        For a documentation of the syntax, see:
+        http://doc.rust-lang.org/regex/regex/index.html#syntax
+
+        Due to limitations of the underlying FST, only a subset of this syntax
+        is supported. Most notably absent are:
+            - Lazy quantifiers (r'*?', r'+?')
+            - Word boundaries (r'\b')
+            - Other zero-width assertions (r'^', r'$')
+        For background on these limitations, consult the documentation of
+        the Rust crate: http://burntsushi.net/rustdoc/fst/struct.Regex.html
+
+        :param pattern:     A regular expression
+        :returns:           An iterator over all items with matching keys in
+                            the set
+        :rtype:             :py:class:`MapItemStreamIterator`
+        """
+        re_ptr = checked_call(
+            lib.fst_regex_new, self._ctx,
+            ffi.new("char[]", pattern.encode('utf8')))
+        stream_ptr = lib.fst_map_regexsearch(self._ptr, re_ptr)
+        return MapItemStreamIterator(stream_ptr, lib.fst_map_regexstream_next,
+                                     lib.fst_map_regexstream_free, re_ptr,
+                                     lib.fst_regex_free)
+
     def search(self, term, max_dist):
-        """ Search the map keys with a Levenshtein automaton.
+        """ Search the map with a Levenshtein automaton.
 
         :param term:        The search term
         :param max_dist:    The maximum edit distance for search results
