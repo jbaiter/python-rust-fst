@@ -1,5 +1,7 @@
 from setuptools import setup
 
+from rust_setuptools import (build_rust_cmdclass, build_install_lib_cmdclass,
+                             RustDistribution)
 
 setup(
     name='rust-fst',
@@ -17,11 +19,12 @@ setup(
         'pytest-runner'],
     install_requires=['cffi>=1.0.0'],
     cffi_modules=['rust_fst/_build_ffi.py:ffi'],
-    entry_points={'distutils.setup_keywords': [
-        'rust_crates = rust_setuptools:rust_crates'
-    ]},
     tests_require=['pytest'],
-    rust_crates=[('fstwrapper', 'rust_fst')],
+    distclass=RustDistribution,
+    cmdclass={
+        'build_rust': build_rust_cmdclass([('fstwrapper', 'rust_fst')]),
+        'install_lib': build_install_lib_cmdclass()
+    },
     packages=['rust_fst'],
     zip_safe=False,
     classifiers=[

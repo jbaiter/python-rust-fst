@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-""" Code by Armin Ronacher.
+""" Based on code by Armin Ronacher and James Salter
 
 https://github.com/mitsuhiko/rust-setuptools
+https://github.com/novocaine/rust-python-ext
 """
 from __future__ import print_function
 
@@ -12,6 +13,7 @@ import subprocess
 
 from distutils.cmd import Command
 from distutils.command.install_lib import install_lib
+from distutils.dist import Distribution
 
 
 if sys.platform == 'win32':
@@ -20,6 +22,16 @@ elif sys.platform == 'darwin':
     DYNAMIC_LIB_SUFFIX = '.dylib'
 else:
     DYNAMIC_LIB_SUFFIX = '.so'
+
+
+class RustDistribution(Distribution):
+
+    def __init__(self, attrs=None):
+        Distribution.__init__(self, attrs)
+        self.ext_modules = []
+
+    def has_ext_modules(self):
+        return True
 
 
 class RustBuildCommand(Command):
@@ -35,6 +47,10 @@ class RustBuildCommand(Command):
         pass
 
     def run(self):
+        # Force binary wheel
+        self.distribution.has_ext_modules = lambda: True
+        self.distribution.ext_modules = []
+
         # Make sure that if pythonXX-sys is used, it builds against the
         # current executing python interpreter.
         bindir = os.path.dirname(sys.executable)
@@ -111,7 +127,6 @@ def build_rust_cmdclass(crates, debug=False,
             'extra_cargo_args': extra_cargo_args,
             'quiet': quiet,
         }
-
     return _RustBuildCommand
 
 
@@ -124,11 +139,3 @@ def build_install_lib_cmdclass(base=None):
             if not self.skip_build:
                 self.run_command('build_rust')
     return _RustInstallLibCommand
-
-
-def rust_crates(dist, attr, value):
-    dist.has_ext_modules = lambda: True
-    dist.ext_modules = []
-    dist.cmdclass['build_rust'] = build_rust_cmdclass(value)
-    dist.cmdclass['install_lib'] = build_install_lib_cmdclass(
-        dist.cmdclass.get('install_lib'))
