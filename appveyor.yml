@@ -20,25 +20,25 @@ environment:
       RUST_TARGET: "x86_64-pc-windows-msvc"
 
 install:
-  - ".build.cmd %PYTHON%\\python -m pip install -U pip setuptools wheel"
+  - "%PYTHON%\\python -m pip install -U pip setuptools wheel"
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:RUST_TARGET}.exe"
   - rust-nightly-%RUST_TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
   - SET PATH=%PATH%;C:\MinGW\bin
-  - rustc -V
-  - cargo -V
 
 build_script:
-  - cd c:\projects\python-rust-fst
+  - ".build.cmd %PYTHON%\\python -m pip install cffi pytest"
+    # We build the shared library outside of setuptools since we run into problems
+    # with the %PATH% set by .build.cmd...
+  - "cargo build --manifest-path fstwrapper/Cargo.toml --release"
   - ".build.cmd %PYTHON%\\python -m pip -v wheel . -w .\\wheelhouse"
   - dir wheelhouse
 
 test_script:
   - SET PROJPATH=C:\Projects\python-rust-fst
   - cd c:\projects
-  - "%PROJPATH%\\.build.cmd %PYTHON%\\python -m pip install cffi pytest"
-  - "%PROJPATH%\\.build.cmd %PYTHON%\\python -m pip -v install rust_fst --no-index -f %PROJPATH%\\wheelhouse"
-  - "%PROJPATH%\\.build.cmd %PYTHON%\\python -m pytest --verbose %PROJPATH%\\tests"
+  - "%PYTHON%\\python -m pip -v install rust_fst --no-index -f %PROJPATH%\\wheelhouse"
+  - "%PYTHON%\\python -m pytest --verbose %PROJPATH%\\tests"
 
 artifacts:
   - path: wheelhouse\rust_fst*.whl
