@@ -13,6 +13,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 - Work with larger-than-memory sets
 - Perform fuzzy search using Levenshtein automata
 
+
 ## Installation
 - You will need:
     * Python >= 3.3, Python or PyPy >= 2.7 with development headers installed
@@ -31,8 +32,45 @@ The package exposes almost all functionality of the `fst` crate, except for:
 - Combining the results of slicing, `search` and `search_re` with set operations
 - Using raw transducers
 
-[1]: http://blog.burntsushi.net/transducers/
+
+## Examples
+```python
+from rust_fst import Map, Set
+
+# Building a set in memory
+keys = ["fa", "fo", "fob", "focus", "foo", "food", "foul"]
+s = Set.from_iter(keys)
+
+# Fuzzy searches on the set
+matches = list(s.search(term="foo", max_dist=1))
+assert matches == ["fo", "fob", "foo", "food"]
+
+# Searching with a regular expression
+matches = list(s.search_re(r'f\w{2}'))
+assert matches == ["fob", "foo"]
+
+# Store map on disk, requiring only constant memory for querying
+items = [("bruce", 1), ("clarence", 2), ("stevie", 3)]
+m = Map.from_iter(items, path="/tmp/map.fst")
+
+# Find all items whose key is greater or equal (in lexicographical sense) to
+# 'clarence'
+matches = dict(m['clarence':])
+assert matches == {'clarence': 2, 'stevie': 3}
+```
+
+
+## Documentation
+Head over to [readthedocs.org][6] for the API documentation.
+
+If you want to know more about performance characteristics, memory usage
+and about the implementation details, please head over to the
+[documentation for the Rust crate][2]
+
+
+[1]: http://burntsushi.net
 [2]: https://github.com/BurntSushi/fst
 [3]: http://burntsushi.net/rustdoc/fst/
 [4]: http://blog.burntsushi.net/transducers/
 [5]: https://www.rustup.rs/
+[6]: https://rust-fst.readthedocs.org/

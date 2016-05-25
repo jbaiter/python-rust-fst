@@ -8,3 +8,4 @@ Cargo.lock
 fstwrapper/target
 .tox
 /wheelhouse
+/docs/_build

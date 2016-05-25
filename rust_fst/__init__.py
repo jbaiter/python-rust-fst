@@ -1,4 +1,4 @@
-from .set import FstSet as Set
-from .map import FstMap as Map
+from .set import Set
+from .map import Map
 
-__all__ = [Set, Map]
+__all__ = ["Set", "Map"]

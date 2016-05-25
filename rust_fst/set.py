@@ -52,7 +52,7 @@ class MemSetBuilder(SetBuilder):
     def get_set(self):
         if self._set_ptr is None:
             raise ValueError("The builder has to be finished first.")
-        return FstSet(pointer=self._set_ptr)
+        return Set(None, _pointer=self._set_ptr)
 
 
 class OpBuilder(object):
@@ -86,20 +86,43 @@ class OpBuilder(object):
                                  lib.fst_set_symmetricdifference_free)
 
 
-class FstSet(object):
-    """ An immutable set backed by a finite state transducer stored on disk.
+class Set(object):
+    """ An immutable ordered string set backed by a finite state transducer.
 
-    The interface tries to follow the `frozenset` type as much as possible.
+    The set can either be constructed in memory or on disk. For large datasets
+    it is recommended to store it on disk, since memory usage will be constant
+    due to the file being memory-mapped.
+
+    To build a set, use the :py:meth:`from_iter` classmethod and pass it an
+    iterator and (optionally) a path where the set should be stored. If the
+    latter is missing, the set will be built in memory.
+
+    The interface follows the built-in `set` type, with a few additions:
+
+    * Range queries with slicing syntax (i.e. `myset['c':'f']` will return an
+      iterator over all items in the set that start with 'c', 'd' or 'e')
+    * Performing fuzzy searches on the set bounded by Levenshtein edit distance
+    * Performing a search with a regular expression
+
+    A few caveats must be kept in mind:
+
+    * Once constructed, a Set can never be modified.
+    * Sets must be built with iterators of lexicographically sorted
+      unicode strings
     """
+
     @staticmethod
     @contextmanager
     def build(fpath=None):
-        """ Context manager to build a new FST set in a given file.
+        """ Context manager to build a new set.
 
-        Keys must be inserted in lexicographical order.
+        Call :py:meth:`insert` on the returned builder object to insert
+        new items into the set. Keep in mind that insertion must happen in
+        lexicographical order, otherwise an exception will be thrown.
 
-        See http://burntsushi.net/rustdoc/fst/struct.SetBuilder.html for more
-        details.
+        :param path:    Path to build set in, or `None` if set should be built
+                        in memory
+        :returns:       :py:class:`SetBuilder`
         """
         if fpath:
             builder = FileSetBuilder(fpath)
@@ -110,6 +133,18 @@ class FstSet(object):
 
     @classmethod
     def from_iter(cls, it, fpath=None):
+        """ Build a new set from an iterator.
+
+        Keep in mind that the iterator must return unicode strings in
+        lexicographical order, otherwise an exception will be thrown.
+
+        :param it:      Iterator to build set with
+        :type it:       iterator over unicode strings
+        :param path:    Path to build set in, or `None` if set should be built
+                        in memory
+        :returns:       The finished set
+        :rtype:         :py:class:`Set`
+        """
         with cls.build(fpath) as builder:
             for key in it:
                 builder.insert(key)
@@ -118,29 +153,50 @@ class FstSet(object):
         else:
             return builder.get_set()
 
-    def __init__(self, path=None, pointer=None):
-        """ Load an FST set from a given file. """
+    def __init__(self, path, _pointer=None):
+        """ Load a set from a given file.
+
+        :param path:    Path to set on disk
+        """
         self._ctx = ffi.gc(lib.fst_context_new(), lib.fst_context_free)
         if path:
             s = checked_call(lib.fst_set_open, self._ctx,
                              ffi.new("char[]", path.encode('utf8')))
         else:
-            s = pointer
+            s = _pointer
         self._ptr = ffi.gc(s, lib.fst_set_free)
 
     def __contains__(self, val):
+        """ Check if the set contains the value. """
         return lib.fst_set_contains(
             self._ptr, ffi.new("char[]", val.encode('utf8')))
 
     def __iter__(self):
+        """ Get an iterator over all keys in the set in lexicographical order.
+
+        """
         stream_ptr = lib.fst_set_stream(self._ptr)
         return KeyStreamIterator(stream_ptr, lib.fst_set_stream_next,
                                  lib.fst_set_stream_free)
 
     def __len__(self):
+        """ Get the number of keys in the set. """
         return int(lib.fst_set_len(self._ptr))
 
     def __getitem__(self, s):
+        """ Get an iterator over a range of set contents.
+
+        Start and stop indices of the slice must be unicode strings.
+
+        .. important::
+            Slicing follows the semantics for numerical indices, i.e. the
+            `stop` value is **exclusive**. For example, given the set
+            `s = Set.from_iter(["bar", "baz", "foo", "moo"])`, `s['b': 'f']`
+            will only return `"bar"` and `"baz"`.
+
+        :param s:   A slice that specifies the range of the set to retrieve
+        :type s:    :py:class:`slice`
+        """
         if not isinstance(s, slice):
             raise ValueError(
                 "Value must be a string slice (e.g. `['foo':]`)")
@@ -165,24 +221,69 @@ class FstSet(object):
         return opbuilder
 
     def union(self, *others):
+        """ Get an iterator over the keys in the union of this set and others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys in all sets in lexicographical
+                        order
+        """
         return self._make_opbuilder(*others).union()
 
     def intersection(self, *others):
+        """ Get an iterator over the keys in the intersection of this set and
+            others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys that exists in all of the passed
+                        sets in lexicographical order
+        """
         return self._make_opbuilder(*others).intersection()
 
     def difference(self, *others):
+        """ Get an iterator over the keys in the difference of this set and
+            others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys that exists in this set, but in
+                        none of the other sets, in lexicographical order
+        """
         return self._make_opbuilder(*others).difference()
 
     def symmetric_difference(self, *others):
+        """ Get an iterator over the keys in the symmetric difference of this
+            set and others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys that exists in only one of the
+                        sets in lexicographical order
+        """
         return self._make_opbuilder(*others).symmetric_difference()
 
     def issubset(self, other):
+        """ Check if this set is a subset of another set.
+
+        :param other:   Another set
+        :type other:    :py:class:`Set`
+        :rtype:         bool
+        """
         return bool(lib.fst_set_issubset(self._ptr, other._ptr))
 
     def issuperset(self, other):
+        """ Check if this set is a superset of another set.
+
+        :param other:   Another set
+        :type other:    :py:class:`Set`
+        :rtype:         bool
+        """
         return bool(lib.fst_set_issuperset(self._ptr, other._ptr))
 
     def isdisjoint(self, other):
+        """ Check if this set is disjoint to another set.
+
+        :param other:   Another set
+        :type other:    :py:class:`Set`
+        :rtype:         bool
+        """
         return bool(lib.fst_set_isdisjoint(self._ptr, other._ptr))
 
     def search_re(self, pattern):
@@ -197,9 +298,11 @@ class FstSet(object):
 
         Due to limitations of the underlying FST, only a subset of this syntax
         is supported. Most notably absent are:
-            - Lazy quantifiers (r'*?', r'+?')
-            - Word boundaries (r'\b')
-            - Other zero-width assertions (r'^', r'$')
+
+        * Lazy quantifiers (``r'*?'``, ``r'+?'``)
+        * Word boundaries (``r'\\b'``)
+        * Other zero-width assertions (``r'^'``, ``r'$'``)
+
         For background on these limitations, consult the documentation of
         the Rust crate: http://burntsushi.net/rustdoc/fst/struct.Regex.html
 
@@ -221,7 +324,7 @@ class FstSet(object):
         :param term:        The search term
         :param max_dist:    The maximum edit distance for search results
         :returns:           Iterator over matching values in the set
-        :rtype:             KeyStreamIterator
+        :rtype:             :py:class:`KeyStreamIterator`
         """
         lev_ptr = checked_call(
             lib.fst_levenshtein_new, self._ctx,

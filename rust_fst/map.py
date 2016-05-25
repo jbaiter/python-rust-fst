@@ -54,7 +54,7 @@ class MemMapBuilder(MapBuilder):
     def get_map(self):
         if self._map_ptr is None:
             raise ValueError("The builder has to be finished first.")
-        return FstMap(pointer=self._map_ptr)
+        return Map(_pointer=self._map_ptr)
 
 
 class OpBuilder(object):
@@ -90,16 +90,48 @@ class OpBuilder(object):
             lib.fst_map_symmetricdifference_free)
 
 
-class FstMap(object):
+class Map(object):
+    """ An immutable map of unicode keys to unsigned integer values backed
+        by a finite state transducer.
+
+    The map can either be constructed in memory or on disk. For large datasets
+    it is recommended to store it on disk, since memory usage will be constant
+    due to the file being memory-mapped.
+
+    To build a map, use the :py:meth:`from_iter` classmethod and pass it an
+    iterator and (optionally) a path where the map should be stored. If the
+    latter is missing, the map will be built in memory.
+
+    In addition to querying the map for single keys, the following operations
+    are supported:
+
+    * Range queries with slicing syntax (i.e. `myset['c':'f']` will return an
+      iterator over all items in the map whose keys start with 'c', 'd' or 'e')
+    * Performing fuzzy searches on the map keys bounded by Levenshtein edit
+      distance
+    * Performing a search on the map keys with a regular expression
+    * Performing set operations on multiple maps, e.g. to find different
+      values for common keys
+
+    A few caveats must be kept in mind:
+
+    * Once constructed, a Map can never be modified.
+    * Sets must be built with iterators of lexicographically sorted
+      (str/unicode, int) tuples, where the integer value must be positive.
+    """
+
     @staticmethod
     @contextmanager
     def build(fpath=None):
-        """ Context manager to build a new FST map in a given file.
+        """ Context manager to build a new map.
 
-        Keys must be inserted in lexicographical order.
+        Call :py:meth:`insert` on the returned builder object to insert
+        new items into the mapp. Keep in mind that insertion must happen in
+        lexicographical order, otherwise an exception will be thrown.
 
-        See http://burntsushi.net/rustdoc/fst/struct.MapBuilder.html for more
-        details.
+        :param path:    Path to build mapp in, or `None` if set should be built
+                        in memory
+        :returns:       :py:class:`MapBuilder`
         """
         if fpath:
             builder = FileMapBuilder(fpath)
@@ -110,6 +142,19 @@ class FstMap(object):
 
     @classmethod
     def from_iter(cls, it, fpath=None):
+        """ Build a new map from an iterator.
+
+        Keep in mind that the iterator must return lexicographically sorted
+        (key, value) pairs, where the keys are unicode strings and the values
+        unsigned integers.
+
+        :param it:      Iterator to build map with
+        :type it:       iterator over (str/unicode, int) pairs, where int >= 0
+        :param path:    Path to build map in, or `None` if set should be built
+                        in memory
+        :returns:       The finished map
+        :rtype:         :py:class:`Map`
+        """
         if isinstance(it, dict):
             it = sorted(it.items(), key=lambda x: x[0])
         with cls.build(fpath) as builder:
@@ -120,14 +165,17 @@ class FstMap(object):
         else:
             return builder.get_map()
 
-    def __init__(self, path=None, pointer=None):
-        """ Load an FST map from a given file. """
+    def __init__(self, path=None, _pointer=None):
+        """ Load a map from a given file.
+
+        :param path:    Path to map on disk
+        """
         self._ctx = ffi.gc(lib.fst_context_new(), lib.fst_context_free)
         if path:
             s = checked_call(lib.fst_map_open, self._ctx,
                              ffi.new("char[]", path.encode('utf8')))
         else:
-            s = pointer
+            s = _pointer
         self._ptr = ffi.gc(s, lib.fst_map_free)
 
     def __contains__(self, val):
@@ -135,6 +183,20 @@ class FstMap(object):
             self._ptr, ffi.new("char[]", val.encode('utf8')))
 
     def __getitem__(self, key):
+        """ Get the value for a key or a range of (key, value) pairs.
+
+        If the key is a slice object (e.g. `mymap['a':'f']`) an iterator
+        over all matching items in the map will be returned.
+
+        .. important::
+            Slicing follows the semantics for numerical indices, i.e. the
+            `stop` value is **exclusive**. For example, `mymap['a':'c']` will
+            return items whose key begins with 'a' or 'b', but **not** 'c'.
+
+        :param key:     The key to retrieve the value for or a range of
+                        unicode strings
+        :returns:       The value or an iterator over matching items
+        """
         if isinstance(key, slice):
             s = key
             if s.start and s.stop and s.start > s.stop:
@@ -161,16 +223,19 @@ class FstMap(object):
         return int(lib.fst_map_len(self._ptr))
 
     def keys(self):
+        """ Get an iterator over all keys in the map. """
         stream_ptr = lib.fst_map_keys(self._ptr)
         return KeyStreamIterator(stream_ptr, lib.fst_mapkeys_next,
                                  lib.fst_mapkeys_free)
 
     def values(self):
+        """ Get an iterator over all values in the map. """
         stream_ptr = lib.fst_map_values(self._ptr)
         return ValueStreamIterator(stream_ptr, lib.fst_mapvalues_next,
                                    lib.fst_mapvalues_free, ctx_ptr=self._ctx)
 
     def items(self):
+        """ Get an iterator over all (key, value) pairs in the map. """
         stream_ptr = lib.fst_map_stream(self._ptr)
         return MapItemStreamIterator(stream_ptr, lib.fst_mapstream_next,
                                      lib.fst_mapstream_free)
@@ -229,13 +294,60 @@ class FstMap(object):
         return opbuilder
 
     def union(self, *others):
+        """ Get an iterator over the items in the union of this map and others.
+
+        The iterator will return pairs of `(key, [IndexedValue])`, where
+        the latter is a list of different values for the key in the different
+        maps, represented as a tuple of the map index and the value in the
+        map.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all items in all maps in lexicographical
+                        order
+        """
         return self._make_opbuilder(*others).union()
 
     def intersection(self, *others):
+        """ Get an iterator over the items in the intersection of this map and
+            others.
+
+        The iterator will return pairs of `(key, [IndexedValue])`, where
+        the latter is a list of different values for the key in the different
+        maps, represented as a tuple of the map index and the value in the
+        map.
+
+        :param others:  List of :py:class:`Map` objects
+        :returns:       Iterator over all items whose key exists in all of the
+                        passed maps in lexicographical order
+        """
         return self._make_opbuilder(*others).intersection()
 
     def difference(self, *others):
+        """ Get an iterator over the items in the difference of this map and
+            others.
+
+        The iterator will return pairs of `(key, [IndexedValue])`, where
+        the latter is a list of different values for the key in the different
+        maps, represented as a tuple of the map index and the value in the
+        map.
+
+        :param others:  List of :py:class:`Map` objects
+        :returns:       Iterator over all items whose key exists in this map,
+                        but in none of the other maps, in lexicographical order
+        """
         return self._make_opbuilder(*others).difference()
 
     def symmetric_difference(self, *others):
+        """ Get an iterator over the items in the symmetric difference of this
+            map and others.
+
+        The iterator will return pairs of `(key, [IndexedValue])`, where
+        the latter is a list of different values for the key in the different
+        maps, represented as a tuple of the map index and the value in the
+        map.
+
+        :param others:  List of :py:class:`Mapp` objects
+        :returns:       Iterator over all items whose key exists in only one of
+                        the maps in lexicographical order
+        """
         return self._make_opbuilder(*others).symmetric_difference()
