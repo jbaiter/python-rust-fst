@@ -29,7 +29,8 @@ before_deploy:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then appveyor-artifacts -c $(git rev-parse HEAD) -o jbaiter -n python-rust-fst download; fi
     # Don't deploy sdist package when building OSX wheels
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PYPI_DISTRIBUTIONS='check'; fi
-  - mkdir -p dist; mv wheelhouse/* dist; ls dist
+  - mkdir -p dist_; mv dist/rust_fst*.whl dist_; rm -rf dist; mv dist_ dist;
+  - mv wheelhouse/rust_fst*.whl dist; ls dist
     # 'twine' installation fails for the old infrastructure  because of the
     # missing 'sudo, so we install it manually here
   - sudo pip install twine
@@ -39,7 +40,7 @@ deploy:
     api_key:
       secure: 0MY7OzVqfPyEdynSZR2ke8VBEjMyAh6MHlXh9jlfdROgaoZ/TUNPlmlDtV+Dd/ZG/nIjcakoIWaFA3/Ta8ekYievoi/vtvdrecHem/O/9zmLglWKJwD3hukUw3w1/YngquzYqlKJrX9pYX3io3hFTUzxDx/5DXYiuRA7q8cvgmztAnDKtEqbRRMVc24Q54mbDmF000sELgumjAaCH3Ronu9f5zXIhrLHDp/gHAlH3LQ19/FNn7rNvx+ZfpLlHYN0RFunXuG7OcDsQMWv/TEUy+rjTV16z5N2xPmonFij37/w5bMgBjPPHTafky24avqoZvGaRDoCkQCU3STrl+pK/ljcnq7Et9Q4p1RPod0ypkh43FANUWsszB5AmTabDxINjFe7UTSsLnzOk7kDXmGU55ZQe87+x1l/GFm6CdZUrL4zkxzN5vA4COe9CGYC6EXieQaOADa62B9PmsbrZuaEUBVOWfSJuMXrTiIKjhB5gmqAuGNsRea8sIAdd9M4mMthLm0rLFrRIH/+W7jANRN7xiL1jchXkMLMn/Fse8jusxXfMF0DYFUYOXfro+ILGw6kCyLkgK5xhArKYahlUqVrHCSQA3PDG3G7F21HtYXhV0ZFnyrwiXZTOpKshMW7TLGYcnhbHbXuyHW4JpoFcFRuHmCZODBtQrfF/KbEAZ06P+8=
     file_glob: true
-    file: ${HOME}/build/${TRAVIS_REPO_SLUG}/dist/*
+    file: ${HOME}/build/${TRAVIS_REPO_SLUG}/dist/rust_fst*.whl
     skip_cleanup: true
     on:
       tags: true
