@@ -54,44 +54,61 @@ OPENSSL_VERSION=1.0.2h
 CURL_VERSION=7.49.0
 RUST_CHANNEL=nightly
 
-# Clean build files
-clean_project
+# It doesn't matter with which Python version we build  the wheel, so we
+# use the oldest supported one
+if [[ $1 == "osx" ]]; then
+    brew update
+    brew install python2.7 mmv
+    install_rust $RUST_CHANNEL
+    pip wheel /io/ -w /io/wheelhouse
+    mmv "/io/wheelhouse/rust_fst-*-cp*-none-macosx*.whl" \
+        "/io/wheelhouse/rust_fst-#1-py2.py3-none-macosx#3.whl"
+    pip install -v rust_fst --no-index -f /io/wheelhouse
+    pip install pytest
+    cd /
+    py.test /io/tests
+else
+    PYBIN=/opt/python/cp27-cp27m/bin
+    # Clean build files
+    clean_project
 
-install_openssl $OPENSSL_VERSION
-install_curl $CURL_VERSION
-install_rust $RUST_CHANNEL
+    install_openssl $OPENSSL_VERSION
+    install_curl $CURL_VERSION
+    install_rust $RUST_CHANNEL
 
-# Remove old wheels
-rm -rf /io/wheelhouse/* || echo "No old wheels to delete"
+    # Remove old wheels
+    rm -rf /io/wheelhouse/* || echo "No old wheels to delete"
 
-# We don't support Python 2.6
-rm -rf /opt/python/cp26*
+    # We don't support Python 2.6
+    rm -rf /opt/python/cp26*
 
-# Install libraries needed for compiling the extension
-yum -q -y install libffi-devel
+    # Install libraries needed for compiling the extension
+    yum -q -y install libffi-devel mmv
 
-# Compile wheels
-for PYBIN in /opt/python/*/bin; do
+    # Compile wheel
     ${PYBIN}/python -m pip wheel /io/ -w /wheelhouse/
-    clean_project
-done
 
-# Move pure wheels to output wheelhouse
-mkdir -p /io/wheelhouse/
-mv /wheelhouse/*any.whl /io/wheelhouse/ || echo "No pure wheels found."
+    # Move pure wheels to target directory
+    mv /wheelhouse/*any.whl /io/wheelhouse || echo "No pure wheels to move"
 
-# Bundle external shared libraries into the wheels
-for whl in /wheelhouse/*.whl; do
-    auditwheel repair $whl -w /io/wheelhouse/
-done
+    # Bundle external shared libraries into the wheel
+    for whl in /wheelhouse/*.whl; do
+        cp $whl /io/wheelhouse/
+        auditwheel repair $whl -w /io/wheelhouse/
+    done
 
-# Set permissions on wheels
-chmod -R a+rw /io/wheelhouse
+    # Rename wheels to match all Python versions
+    mmv "/io/wheelhouse/rust_fst-*-cp*-cp*-manylinux1_*.whl" \
+        "/io/wheelhouse/rust_fst-#1-py2.py3-none-manylinux1_#4.whl"
 
-# Install packages and test
-for PYBIN in /opt/python/*/bin/; do
-    ${PYBIN}/python -m pip install pytest
-    ${PYBIN}/python -m pip install rust_fst --no-index -f /io/wheelhouse
-    ${PYBIN}/python -m pytest --verbose /io/tests
-    clean_project
-done
+    # Set permissions on wheels
+    chmod -R a+rw /io/wheelhouse
+
+    # Install packages and test with all Python versions
+    for PYBIN in /opt/python/*/bin/; do
+        ${PYBIN}/python -m pip install pytest cffi
+        ${PYBIN}/python -m pip install rust_fst --no-index -f /io/wheelhouse
+        ${PYBIN}/python -m pytest --verbose /io/tests
+        clean_project
+    done
+fi
