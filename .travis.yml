@@ -15,7 +15,7 @@ matrix:
     #       PRE_CMD=linux32
 
 install:
-  - pip install appveyor-artifacts
+  - sudo pip install appveyor-artifacts
   - docker pull $DOCKER_IMAGE
 
 script:
