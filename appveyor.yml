@@ -1,25 +1,12 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Python27"
+    - PYARCH: ""
       RUST_TARGET: "i686-pc-windows-msvc"
-    - PYTHON: "C:\\Python33"
-      RUST_TARGET: "i686-pc-windows-msvc"
-    - PYTHON: "C:\\Python34"
-      RUST_TARGET: "i686-pc-windows-msvc"
-    - PYTHON: "C:\\Python35"
-      RUST_TARGET: "i686-pc-windows-msvc"
-    - PYTHON: "C:\\Python27-x64"
-      RUST_TARGET: "x86_64-pc-windows-msvc"
-    - PYTHON: "C:\\Python33-x64"
-      DISTUTILS_USE_SDK: "1"
-      RUST_TARGET: "x86_64-pc-windows-msvc"
-    - PYTHON: "C:\\Python34-x64"
-      DISTUTILS_USE_SDK: "1"
-      RUST_TARGET: "x86_64-pc-windows-msvc"
-    - PYTHON: "C:\\Python35-x64"
+    - PYARCH: "-x64"
       RUST_TARGET: "x86_64-pc-windows-msvc"
 
 install:
+  - SET PYTHON=C:\Python27%PYARCH%
   - "%PYTHON%\\python -m pip install -U pip setuptools wheel"
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:RUST_TARGET}.exe"
   - rust-nightly-%RUST_TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
@@ -27,18 +14,31 @@ install:
   - SET PATH=%PATH%;C:\MinGW\bin
 
 build_script:
-  - ".build.cmd %PYTHON%\\python -m pip install cffi pytest"
-    # We build the shared library outside of setuptools since we run into problems
-    # with the %PATH% set by .build.cmd...
-  - "cargo build --manifest-path fstwrapper/Cargo.toml --release"
-  - ".build.cmd %PYTHON%\\python -m pip -v wheel . -w .\\wheelhouse"
+  - "%PYTHON%\\python -m pip install pytest"
+  - "%PYTHON%\\python -m pip -v wheel . -w .\\wheelhouse"
+    # Rename the wheel so it is valid for all Python versions
+    # This is possible since our shared library does not link against any
+    # Python ABI
+    # TODO: This leaves the old Python ABI/ABI tags in the 'WHEEL' file inside
+    #       of the wheel. However, `pip` does not seem to validate against that
+    #       currently, so we're safe until they change it...
+  - ps: |
+      get-childItem wheelhouse\*-cp*-win*.whl | rename-item -newname {
+          $_.name -replace '-cp.*?-cp.*?-','-py2.py3-none-' 
+      }
   - dir wheelhouse
 
 test_script:
   - SET PROJPATH=C:\Projects\python-rust-fst
   - cd c:\projects
-  - "%PYTHON%\\python -m pip -v install rust_fst --no-index -f %PROJPATH%\\wheelhouse"
-  - "%PYTHON%\\python -m pytest --verbose %PROJPATH%\\tests"
+  - ps: |
+      $PyVersions = @("27", "33", "34", "35")
+      foreach ($pyver in $PyVersions) {
+        $python = "C:\\Python$pyver${env:PYARCH}\\python"
+        &$python -m pip install -U pip setuptools wheel pytest cffi
+        &$python -m pip -v install rust_fst --no-index -f "${env:PROJPATH}\wheelhouse"
+        &$python -m pytest "${env:PROJPATH}\tests"
+      }
 
 artifacts:
   - path: wheelhouse\rust_fst*.whl

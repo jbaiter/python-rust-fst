@@ -58,15 +58,16 @@ RUST_CHANNEL=nightly
 # use the oldest supported one
 if [[ $1 == "osx" ]]; then
     brew update
-    brew install python2.7 mmv
+    brew install python mmv
+    pip install -U pip setuptools wheel
     install_rust $RUST_CHANNEL
-    pip wheel /io/ -w /io/wheelhouse
-    mmv "/io/wheelhouse/rust_fst-*-cp*-none-macosx*.whl" \
-        "/io/wheelhouse/rust_fst-#1-py2.py3-none-macosx#3.whl"
-    pip install -v rust_fst --no-index -f /io/wheelhouse
+    pip wheel . -w ./wheelhouse
+    mmv "./wheelhouse/rust_fst-*-cp*-cp*-macosx*.whl" \
+        "./wheelhouse/rust_fst-#1-py2.py3-none-macosx#4.whl"
+    pip install -v rust_fst --no-index -f ./wheelhouse
     pip install pytest
-    cd /
-    py.test /io/tests
+    cd ../
+    py.test ./python-rust-fst/tests
 else
     PYBIN=/opt/python/cp27-cp27m/bin
     # Clean build files
@@ -89,11 +90,11 @@ else
     ${PYBIN}/python -m pip wheel /io/ -w /wheelhouse/
 
     # Move pure wheels to target directory
+    mkdir -p /io/wheelhouse
     mv /wheelhouse/*any.whl /io/wheelhouse || echo "No pure wheels to move"
 
     # Bundle external shared libraries into the wheel
     for whl in /wheelhouse/*.whl; do
-        cp $whl /io/wheelhouse/
         auditwheel repair $whl -w /io/wheelhouse/
     done
 
