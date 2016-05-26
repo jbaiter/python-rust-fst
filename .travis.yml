@@ -17,7 +17,6 @@ matrix:
     #       PRE_CMD=linux32
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo pip install appveyor-artifacts; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker pull $DOCKER_IMAGE; fi
 
 script:
@@ -25,9 +24,15 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/build-wheels.sh $TRAVIS_OS_NAME; fi
   - ls wheelhouse/
 
-after_success:
+before_deploy:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo pip install appveyor-artifacts; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then appveyor-artifacts -c $(git rev-parse HEAD) -o jbaiter -n python-rust-fst download; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p dist; mv wheelhouse/* dist; ls dist; fi
+    # Don't deploy sdist package when building OSX wheels
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PYPI_DISTRIBUTIONS='check'; fi
+  - mkdir -p dist; mv wheelhouse/* dist; ls dist
+    # 'twine' installation fails for the old infrastructure  because of the
+    # missing 'sudo, so we install it manually here
+  - sudo pip install twine
 
 deploy:
   - provider: releases
@@ -35,6 +40,7 @@ deploy:
       secure: 0MY7OzVqfPyEdynSZR2ke8VBEjMyAh6MHlXh9jlfdROgaoZ/TUNPlmlDtV+Dd/ZG/nIjcakoIWaFA3/Ta8ekYievoi/vtvdrecHem/O/9zmLglWKJwD3hukUw3w1/YngquzYqlKJrX9pYX3io3hFTUzxDx/5DXYiuRA7q8cvgmztAnDKtEqbRRMVc24Q54mbDmF000sELgumjAaCH3Ronu9f5zXIhrLHDp/gHAlH3LQ19/FNn7rNvx+ZfpLlHYN0RFunXuG7OcDsQMWv/TEUy+rjTV16z5N2xPmonFij37/w5bMgBjPPHTafky24avqoZvGaRDoCkQCU3STrl+pK/ljcnq7Et9Q4p1RPod0ypkh43FANUWsszB5AmTabDxINjFe7UTSsLnzOk7kDXmGU55ZQe87+x1l/GFm6CdZUrL4zkxzN5vA4COe9CGYC6EXieQaOADa62B9PmsbrZuaEUBVOWfSJuMXrTiIKjhB5gmqAuGNsRea8sIAdd9M4mMthLm0rLFrRIH/+W7jANRN7xiL1jchXkMLMn/Fse8jusxXfMF0DYFUYOXfro+ILGw6kCyLkgK5xhArKYahlUqVrHCSQA3PDG3G7F21HtYXhV0ZFnyrwiXZTOpKshMW7TLGYcnhbHbXuyHW4JpoFcFRuHmCZODBtQrfF/KbEAZ06P+8=
     file_glob: true
     file: ${HOME}/build/${TRAVIS_REPO_SLUG}/dist/*
+    skip_cleanup: true
     on:
       tags: true
       repo: jbaiter/python-rust-fst
@@ -42,6 +48,7 @@ deploy:
     user: jbaiter
     password:
       secure: rjroeCazKXEzIc9ROgu6ifqXU6ZN2ihGGuUTE9lZ3dW9zwdfCYS3eCMhW9FrM/hXIj9Sd7SSAl7onHfGj7Fe2R7PkR8BFKwYUKsn8E2R6vnsUzQC23Cb5SXlEWFBIbZm7ATmsgiPxX61jHXXn/PupHM3kU1FRaBLADXhkO6flA2tZKFXSZ947RR+CQKKKJlkoW4gn7g8a+azWHMY6dDU7RBRHtC3Yz27ggM2iYIgdZvCfYLAJlsX+puxPk5YLZJus52zQ6xo7nG7xEkI66EsPuL98f979aGLhxrRA2aqvQXFr3CXMkXf2EHe23bbIspd+blShUnIGHPbmx1ODd+0tW0FiyDkciju+Q43Ffq/mW8jrUXPC5QCiTIQbBBQGUa9n6jV/SrKHA+HBQWUhwKEYO7kP+7LU1wRBtIje2woKj4XLFh7uN/UacT65adzQEpQmXxxNntjJrievosrlAssK2aqZtAiZNXJNWU0Ig6FV/mm9JgN/bdJEesiGZWmrJigSqk3OupwznwawRGtcndKFNgxDAbNahdgpgqyH3HCDvP35+3kUmu9s9TdXU9xuZee0vf2XY/THTQTg27zAHUNEBXUQf8as1N7f+MWkHE4zdizAErIyD5nNSaJgK5ixsEB6WUkZ/kVYKIFwyeTXtkn31F5/TxoCESC/XbmRPeE8r8=
+    skip_cleanup: true
     on:
       tags: true
       repo: jbaiter/python-rust-fst
