@@ -13,10 +13,10 @@ class SetBuilder(object):
 
 
 class FileSetBuilder(SetBuilder):
-    def __init__(self, fpath):
+    def __init__(self, path):
         self._ctx = lib.fst_context_new()
         self._writer_p = checked_call(
-            lib.fst_bufwriter_new, self._ctx, fpath.encode('utf8'))
+            lib.fst_bufwriter_new, self._ctx, path.encode('utf8'))
         self._builder_p = checked_call(
             lib.fst_filesetbuilder_new, self._ctx, self._writer_p)
 
@@ -113,7 +113,7 @@ class Set(object):
 
     @staticmethod
     @contextmanager
-    def build(fpath=None):
+    def build(path=None):
         """ Context manager to build a new set.
 
         Call :py:meth:`insert` on the returned builder object to insert
@@ -124,15 +124,15 @@ class Set(object):
                         in memory
         :returns:       :py:class:`SetBuilder`
         """
-        if fpath:
-            builder = FileSetBuilder(fpath)
+        if path:
+            builder = FileSetBuilder(path)
         else:
             builder = MemSetBuilder()
         yield builder
         builder.finish()
 
     @classmethod
-    def from_iter(cls, it, fpath=None):
+    def from_iter(cls, it, path=None):
         """ Build a new set from an iterator.
 
         Keep in mind that the iterator must return unicode strings in
@@ -145,11 +145,11 @@ class Set(object):
         :returns:       The finished set
         :rtype:         :py:class:`Set`
         """
-        with cls.build(fpath) as builder:
+        with cls.build(path) as builder:
             for key in it:
                 builder.insert(key)
-        if fpath:
-            return cls(path=fpath)
+        if path:
+            return cls(path=path)
         else:
             return builder.get_set()
 
