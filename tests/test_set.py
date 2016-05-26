@@ -22,9 +22,9 @@ def fst_set(tmpdir):
 
 
 def test_build(tmpdir):
-    fst_path = str(tmpdir.join('test.fst'))
-    do_build(fst_path)
-    assert True
+    fst_path = tmpdir.join('test.fst')
+    do_build(str(fst_path))
+    assert fst_path.exists()
 
 
 def test_build_outoforder(tmpdir):

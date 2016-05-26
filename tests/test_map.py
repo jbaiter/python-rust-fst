@@ -8,17 +8,12 @@ from rust_fst import Map
 TEST_ITEMS = [(u"möö", 1), (u"bar", 2), (u"baz", 1337), (u"foo", 2**16)]
 
 
-def do_build(path=None, keys=TEST_ITEMS, sorted_=True):
+def do_build(path=None, items=TEST_ITEMS, sorted_=True):
     if sorted_:
-        it = sorted(keys)
+        it = sorted(items)
     else:
-        it = keys
-    if path:
-        with Map.build(path) as builder:
-            for key, val in it:
-                builder.insert(key, val)
-    else:
-        return Map.from_iter(it)
+        it = items
+    return Map.from_iter(it=it, path=path)
 
 
 @pytest.fixture
@@ -27,8 +22,9 @@ def fst_map():
 
 
 def test_build(tmpdir):
-    fst_path = str(tmpdir.join('test.fst'))
-    do_build(fst_path)
+    fst_path = tmpdir.join('test.fst')
+    do_build(str(fst_path))
+    assert fst_path.exists()
 
 
 def test_build_outoforder(tmpdir):
