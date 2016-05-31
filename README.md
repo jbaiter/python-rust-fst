@@ -2,6 +2,9 @@
 
 [![appveyor](https://ci.appveyor.com/api/projects/status/github/jbaiter/python-rust-fst)](https://ci.appveyor.com/project/jbaiter/python-rust-fst)
 [![travis](https://travis-ci.org/jbaiter/python-rust-fst.svg)](https://travis-ci.org/jbaiter/python-rust-fst)
+[![pypi downloads](https://img.shields.io/pypi/dm/rust_fst.svg?maxAge=2592000)](https://pypi.python.org/pypi/rust-fst)
+[![pypi version](https://img.shields.io/pypi/v/rust_fst.svg?maxAge=2592000)](https://pypi.python.org/pypi/rust_fst)
+[![pypi wheel](https://img.shields.io/pypi/wheel/rust_fst.svg?maxAge=2592000)](https://pypi.python.org/pypi/rust_fst)
 
 Python bindings for [burntsushi's][1] [fst crate][2] ([rustdocs][3])
 for FST-backed sets and maps.
@@ -15,15 +18,24 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 
 
 ## Installation
+`rust_fst` is available as a binary wheel for the most common platforms (Linux
+32/64bit x86, Windows 32/64bit x86 and OSX 64bit x86) and thus **does not require
+a Rust installation.**
+
+Just run `pip install rust_fst` to install the latest stable version of the
+package.
+
+
+## Development
 - You will need:
     * Python >= 3.3, Python or PyPy >= 2.7 with development headers installed
     * Rust nightly (install via [rustup][5])
-- Clone the repository. Installation with `pip install git+...` does not work
-  currently
 - Run `rustup override add nightly` to add an override for rustup to use the
   nightly channel for the repository
-- Run `python setup.py bdist_wheel` to generate a wheel
-- Install the wheel with `pip install dist/rust_fst-0.1-py3-none-any.whl`
+- Install with pip (without the `-e` flag, it does not work!)
+- Run tests with `py.test python-rust-fst/tests` and make sure you are not
+  in the root of the repo, since the installed (and compiled) package will not
+  be used in that case.
 
 
 ## Status
