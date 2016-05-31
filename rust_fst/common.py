@@ -6,17 +6,28 @@ from .lib import ffi, lib
 class StreamIterator(object):
     def __init__(self, stream_ptr, next_fn, free_fn, autom_ptr=None,
                  autom_free_fn=None, ctx_ptr=None):
-        self._ptr = stream_ptr
-        self._next_fn = next_fn
         self._free_fn = free_fn
-        self._autom_ptr = autom_ptr
-        self._autom_free_fn = autom_free_fn
+        self._ptr = ffi.gc(stream_ptr, free_fn)
+        self._next_fn = next_fn
+        if autom_ptr:
+            self._autom_ptr = ffi.gc(autom_ptr, autom_free_fn)
+            self._autom_free_fn = autom_free_fn
+        else:
+            self._autom_ptr = None
         self._ctx = ctx_ptr
 
     def _free(self):
-        self._free_fn(self._ptr)
-        if self._autom_ptr:
-            self._autom_free_fn(self._autom_ptr)
+        # TODO: We could safely free the structures before the GC does,
+        #       but unfortunately removing GC-callbacks is only supported
+        #       in cffi >= 1.7, which is not yet released.
+
+        # self._free_fn(self._ptr)
+        # # Clear GC hook to prevent double-free
+        # ffi.gc(self._ptr, None)
+        # if self._autom_ptr:
+        #     self._autom_free_fn(self._autom_ptr)
+        #     ffi.gc(self._autom_ptr, None)
+        pass
 
     def __iter__(self):
         return self

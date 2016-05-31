@@ -15,11 +15,10 @@ setup(
               'data_structures'],
     url='https://github.com/jbaiter/python-rust-fst',
     setup_requires=[
-        'cffi>=1.0.0',
-        'pytest-runner'],
+        'cffi>=1.0.0'],
     install_requires=['cffi>=1.0.0'],
     cffi_modules=['rust_fst/_build_ffi.py:ffi'],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'psutil', 'decorator'],
     distclass=RustDistribution,
     cmdclass={
         'build_rust': build_rust_cmdclass([('fstwrapper', 'rust_fst')]),
