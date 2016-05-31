@@ -65,7 +65,7 @@ if [[ $1 == "osx" ]]; then
     mmv "./wheelhouse/rust_fst-*-cp*-cp*-macosx*.whl" \
         "./wheelhouse/rust_fst-#1-py2.py3-none-macosx#4.whl"
     pip install -v rust_fst --no-index -f ./wheelhouse
-    pip install pytest
+    pip install -r "test-requirements.txt"
     cd ../
     py.test ./python-rust-fst/tests
 else
@@ -107,7 +107,7 @@ else
 
     # Install packages and test with all Python versions
     for PYBIN in /opt/python/*/bin/; do
-        ${PYBIN}/python -m pip install pytest cffi
+        ${PYBIN}/python -m pip install -r "/io/test-requirements.txt"
         ${PYBIN}/python -m pip install rust_fst --no-index -f /io/wheelhouse
         ${PYBIN}/python -m pytest --verbose /io/tests
         clean_project

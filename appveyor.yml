@@ -14,7 +14,6 @@ install:
   - SET PATH=%PATH%;C:\MinGW\bin
 
 build_script:
-  - "%PYTHON%\\python -m pip install pytest"
   - "%PYTHON%\\python -m pip -v wheel . -w .\\wheelhouse"
     # Rename the wheel so it is valid for all Python versions
     # This is possible since our shared library does not link against any
@@ -24,7 +23,7 @@ build_script:
     #       currently, so we're safe until they change it...
   - ps: |
       get-childItem wheelhouse\*-cp*-win*.whl | rename-item -newname {
-          $_.name -replace '-cp.*?-cp.*?-','-py2.py3-none-' 
+          $_.name -replace '-cp.*?-cp.*?-','-py2.py3-none-'
       }
   - dir wheelhouse
 
@@ -35,7 +34,8 @@ test_script:
       $PyVersions = @("27", "33", "34", "35")
       foreach ($pyver in $PyVersions) {
         $python = "C:\\Python$pyver${env:PYARCH}\\python"
-        &$python -m pip install -U pip setuptools wheel pytest cffi
+        &$python -m pip install -U pip setuptools wheel
+        &$python -m pip install -r "{$env:PROJPATH}\test-requirements.txt"
         &$python -m pip -v install rust_fst --no-index -f "${env:PROJPATH}\wheelhouse"
         &$python -m pytest "${env:PROJPATH}\tests"
       }
