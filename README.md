@@ -19,7 +19,7 @@ article on ["Index[ing] 1,600,000,000 Keys with Automata and Rust"][4].
 
 ## Installation
 `rust_fst` is available as a binary wheel for the most common platforms (Linux
-32/64bit x86, Windows 32/64bit x86 and OSX 64bit x86) and thus **does not require
+64bit x86, Windows 32/64bit x86 and OSX 64bit x86) and thus **does not require
 a Rust installation.**
 
 Just run `pip install rust_fst` to install the latest stable version of the
