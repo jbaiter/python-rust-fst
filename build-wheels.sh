@@ -64,6 +64,7 @@ if [[ $1 == "osx" ]]; then
     pip wheel . -w ./wheelhouse
     mmv "./wheelhouse/rust_fst-*-cp*-cp*-macosx*.whl" \
         "./wheelhouse/rust_fst-#1-py2.py3-none-macosx#4.whl"
+    pip install cffi
     pip install -v rust_fst --no-index -f ./wheelhouse
     pip install -r "test-requirements.txt"
     cd ../
