@@ -34,7 +34,7 @@ test_script:
       $PyVersions = @("27", "33", "34", "35")
       foreach ($pyver in $PyVersions) {
         $python = "C:\\Python$pyver${env:PYARCH}\\python"
-        &$python -m pip install -U pip setuptools wheel cffi pytest deco psutil
+        &$python -m pip install -U pip setuptools wheel cffi pytest decorator psutil
         &$python -m pip -v install rust_fst --no-index -f "${env:PROJPATH}\wheelhouse"
         &$python -m pytest "${env:PROJPATH}\tests"
       }
