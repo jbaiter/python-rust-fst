@@ -108,6 +108,7 @@ else
 
     # Install packages and test with all Python versions
     for PYBIN in /opt/python/*/bin/; do
+        ${PYBIN}/python -m pip install cffi
         ${PYBIN}/python -m pip install -r "/io/test-requirements.txt"
         ${PYBIN}/python -m pip install rust_fst --no-index -f /io/wheelhouse
         ${PYBIN}/python -m pytest --verbose /io/tests
