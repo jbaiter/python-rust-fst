@@ -77,7 +77,18 @@ Examples
     # 'clarence'
     matches = dict(m['clarence':])
     assert matches == {'clarence': 2, 'stevie': 3}
-
+    
+    # Create a map from a file input, using generators/yield
+    # The input file must be sorted on the first column, and look roughly like
+    #   keyA 123
+    #   keyB 456
+    def file_iterator(fpath):
+      with open(fpath, 'rt') as fp:
+        for line in fp:
+          key, value = line.strip().split()
+          yield key, int(value)
+    m = Map.from_iter( file_iterator('/your/input/file/'), '/your/mmapped/output.fst')
+    
 
 API Reference
 -------------
