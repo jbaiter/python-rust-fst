@@ -69,6 +69,9 @@ m = Map.from_iter(items, path="/tmp/map.fst")
 # 'clarence'
 matches = dict(m['clarence':])
 assert matches == {'clarence': 2, 'stevie': 3}
+
+# re-open a file you built previously with from_iter()
+m = Map(path='/path/to/existing.fst')
 ```
 
 
