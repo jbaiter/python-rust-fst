@@ -80,6 +80,9 @@ def file_iterator(fpath):
       key, value = line.strip().split()
       yield key, int(value)
 m = Map.from_iter( file_iterator('/your/input/file/'), '/your/mmapped/output.fst')
+
+# re-open a file you built previously with from_iter()
+m = Map(path='/path/to/existing.fst')
 ```
 
 
