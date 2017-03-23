@@ -13,10 +13,28 @@ use fst::{Levenshtein,Regex};
 /// Exposes information about errors over the ABI
 pub struct Context {
     pub has_error: bool,
-    pub error_type: *const libc::c_char,
-    pub error_debug: *const libc::c_char,
-    pub error_display: *const libc::c_char,
-    pub error_description: *const libc::c_char,
+    pub error_type: *mut libc::c_char,
+    pub error_debug: *mut libc::c_char,
+    pub error_display: *mut libc::c_char,
+    pub error_description: *mut libc::c_char,
+}
+
+impl Context {
+    pub fn clear(&mut self) {
+        self.has_error = false;
+        if !self.error_type.is_null() {
+            fst_string_free(self.error_type);
+        }
+        if !self.error_debug.is_null() {
+            fst_string_free(self.error_debug);
+        }
+        if !self.error_display.is_null() {
+            fst_string_free(self.error_display);
+        }
+        if !self.error_description.is_null() {
+            fst_string_free(self.error_description);
+        }
+    }
 }
 
 
@@ -43,10 +61,10 @@ pub fn get_typename<T>(_: &T) -> &'static str {
 pub extern "C" fn fst_context_new() -> *mut Context {
     to_raw_ptr(Context {
         has_error: false,
-        error_type: ptr::null(),
-        error_description: ptr::null(),
-        error_display: ptr::null(),
-        error_debug: ptr::null(),
+        error_type: ptr::null_mut(),
+        error_description: ptr::null_mut(),
+        error_display: ptr::null_mut(),
+        error_debug: ptr::null_mut(),
     })
 }
 make_free_fn!(fst_context_free, *mut Context);

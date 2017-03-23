@@ -119,16 +119,14 @@ pub extern "C" fn fst_map_get(ctx: *mut Context,
                               -> libc::uint64_t {
     let key = cstr_to_str(key);
     let ctx = mutref_from_ptr!(ctx);
-    ctx.has_error = false;
+    ctx.clear();
     match ref_from_ptr!(ptr).get(key) {
         Some(val) => val,
         None => {
             let msg = str_to_cstr(&format!("Key '{}' not in map.", key));
             ctx.has_error = true;
-            ctx.error_type = str_to_cstr("KeyError");
-            ctx.error_debug = msg;
+            ctx.error_type = str_to_cstr("py::KeyError");
             ctx.error_display = msg;
-            ctx.error_description = msg;
             return 0;
         }
     }
@@ -150,16 +148,14 @@ make_free_fn!(fst_mapvalues_free, *mut map::Values);
 #[no_mangle]
 pub extern "C" fn fst_mapvalues_next(ctx: *mut Context, ptr: *mut map::Values) -> libc::uint64_t {
     let ctx = mutref_from_ptr!(ctx);
-    ctx.has_error = false;
+    ctx.clear();
     match mutref_from_ptr!(ptr).next() {
         Some(val) => val,
         None => {
             let msg = str_to_cstr("No more values.");
             ctx.has_error = true;
             ctx.error_type = str_to_cstr("StopIteration");
-            ctx.error_debug = msg;
             ctx.error_display = msg;
-            ctx.error_description = msg;
             return 0;
         }
     }

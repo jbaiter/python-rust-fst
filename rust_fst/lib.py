@@ -48,6 +48,7 @@ EXCEPTION_MAP = {
     'fst::Error::Regex': RegexError,
     'fst::Error::Levenshtein': LevenshteinError,
     'fst::Error::Io': IoError,
+    'py::KeyError': KeyError
 }
 
 
@@ -55,11 +56,17 @@ def checked_call(fn, ctx, *args):
     res = fn(ctx, *args)
     if not ctx.has_error:
         return res
-    msg = ffi.string(ctx.error_display).decode('utf8').replace('\n', ' ')
     type_str = ffi.string(ctx.error_type).decode('utf8')
+    if ctx.error_display != ffi.NULL:
+        msg = ffi.string(ctx.error_display).decode('utf8').replace('\n', ' ')
+    else:
+        msg = None
     err_type = EXCEPTION_MAP.get(type_str)
     if err_type is FstError:
-        desc_str = ffi.string(ctx.error_description).decode('utf8')
+        if ctx.error_description != ffi.NULL:
+            desc_str = ffi.string(ctx.error_description).decode('utf8')
+        else:
+            desc_str = None
         enum_val = re.match(r'(\w+)\(.*?\)', desc_str, re.DOTALL).group(1)
         err_type = EXCEPTION_MAP.get("{}::{}".format(type_str, enum_val))
         if err_type is None:
