@@ -50,7 +50,7 @@ function clean_project {
     popd
 }
 
-OPENSSL_VERSION=1.0.2h
+OPENSSL_VERSION=1.0.2k
 CURL_VERSION=7.49.0
 RUST_CHANNEL=nightly
 
