@@ -58,7 +58,7 @@ RUST_CHANNEL=nightly
 # use the oldest supported one
 if [[ $1 == "osx" ]]; then
     brew update
-    brew install python mmv
+    brew install mmv
     pip install -U pip setuptools wheel
     install_rust $RUST_CHANNEL
     pip wheel . -w ./wheelhouse
