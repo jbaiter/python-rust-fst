@@ -45,8 +45,8 @@ EXCEPTION_MAP = {
     'std::io::Error': OSError,
     'fst::Error': FstError,
     'fst::Error::Fst': TransducerError,
-    'fst::Error::Regex': RegexError,
-    'fst::Error::Levenshtein': LevenshteinError,
+    'fst_regex::Error': RegexError,
+    'fst_levenshtein::Error': LevenshteinError,
     'fst::Error::Io': IoError,
     'py::KeyError': KeyError
 }
