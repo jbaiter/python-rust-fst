@@ -1,4 +1,6 @@
 extern crate libc;
+extern crate fst_levenshtein;
+extern crate fst_regex;
 
 
 use std::error::Error;
@@ -7,7 +9,6 @@ use std::fs::File;
 use std::intrinsics;
 use std::io;
 use std::ptr;
-use fst::{Levenshtein,Regex};
 
 
 /// Exposes information about errors over the ABI
@@ -89,18 +90,18 @@ make_free_fn!(fst_bufwriter_free, *mut io::BufWriter<File>);
 pub extern "C" fn fst_levenshtein_new(ctx: *mut Context,
                                       c_key: *mut libc::c_char,
                                       max_dist: libc::uint32_t)
-                                      -> *mut Levenshtein {
+                                      -> *mut fst_levenshtein::Levenshtein {
     let key = cstr_to_str(c_key);
     let lev = with_context!(ctx, ptr::null_mut(),
-                            Levenshtein::new(key, max_dist));
+                            fst_levenshtein::Levenshtein::new(key, max_dist));
     to_raw_ptr(lev)
 }
-make_free_fn!(fst_levenshtein_free, *mut Levenshtein);
+make_free_fn!(fst_levenshtein_free, *mut fst_levenshtein::Levenshtein);
 
 #[no_mangle]
-pub extern "C" fn fst_regex_new(ctx: *mut Context, c_pat: *mut libc::c_char) -> *mut Regex {
+pub extern "C" fn fst_regex_new(ctx: *mut Context, c_pat: *mut libc::c_char) -> *mut fst_regex::Regex {
     let pat = cstr_to_str(c_pat);
-    let re = with_context!(ctx, ptr::null_mut(), Regex::new(pat));
+    let re = with_context!(ctx, ptr::null_mut(), fst_regex::Regex::new(pat));
     to_raw_ptr(re)
 }
-make_free_fn!(fst_regex_free, *mut Regex);
+make_free_fn!(fst_regex_free, *mut fst_regex::Regex);

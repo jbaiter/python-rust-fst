@@ -1,7 +1,7 @@
 [package]
 
 name = "fst-wrapper"
-version = "0.1.2"
+version = "0.3.0"
 authors = ["Johannes Baiter <johannes.baiter@gmail.com>"]
 
 [lib]
@@ -10,4 +10,6 @@ crate-type = ["dylib"]
 
 [dependencies]
 libc = "0.2"
-fst = "^0.1.30"
+fst = "^0.3.0"
+fst-levenshtein = "^0.2.0"
+fst-regex = "^0.2.0"

@@ -5,7 +5,7 @@ from rust_setuptools import (build_rust_cmdclass, build_install_lib_cmdclass,
 
 setup(
     name='rust-fst',
-    version='0.1.2',
+    version='0.2.0dev',
     author='Johannes Baiter',
     author_email='johannes.baiter@gmail.com',
     description=('Python bindings for the Rust `fst` create, providing sets '

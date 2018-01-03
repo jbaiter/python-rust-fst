@@ -1,10 +1,13 @@
 extern crate libc;
+extern crate fst;
+extern crate fst_levenshtein;
+extern crate fst_regex;
 
 use std::error::Error;
 use std::fs::File;
 use std::io;
 use std::ptr;
-use fst::{IntoStreamer, Streamer, Levenshtein, Regex, Map, MapBuilder};
+use fst::{IntoStreamer, Streamer, Map, MapBuilder};
 use fst::map;
 use fst::raw;
 
@@ -31,8 +34,8 @@ pub struct MapOpItem {
 
 pub type FileMapBuilder = MapBuilder<&'static mut io::BufWriter<File>>;
 pub type MemMapBuilder = MapBuilder<Vec<u8>>;
-pub type MapLevStream = map::Stream<'static, &'static Levenshtein>;
-pub type MapRegexStream = map::Stream<'static, &'static Regex>;
+pub type MapLevStream = map::Stream<'static, &'static fst_levenshtein::Levenshtein>;
+pub type MapRegexStream = map::Stream<'static, &'static fst_regex::Regex>;
 
 
 #[no_mangle]
@@ -87,7 +90,8 @@ pub extern "C" fn fst_memmapbuilder_finish(ctx: *mut Context, ptr: *mut MemMapBu
 }
 
 #[no_mangle]
-pub extern "C" fn fst_map_open(ctx: *mut Context, path: *mut libc::c_char) -> *mut Map {
+#[allow(unused_unsafe)]
+pub unsafe extern "C" fn fst_map_open(ctx: *mut Context, path: *mut libc::c_char) -> *mut Map {
     let path = cstr_to_str(path);
     let map = with_context!(ctx, ptr::null_mut(), Map::from_path(path));
     to_raw_ptr(map)
@@ -163,7 +167,7 @@ pub extern "C" fn fst_mapvalues_next(ctx: *mut Context, ptr: *mut map::Values) -
 
 #[no_mangle]
 pub extern "C" fn fst_map_levsearch(map_ptr: *mut Map,
-                                    lev_ptr: *mut Levenshtein)
+                                    lev_ptr: *mut fst_levenshtein::Levenshtein)
                                     -> *mut MapLevStream {
     let map = mutref_from_ptr!(map_ptr);
     let lev = ref_from_ptr!(lev_ptr);
@@ -174,7 +178,7 @@ map_make_next_fn!(fst_map_levstream_next, *mut MapLevStream);
 
 
 #[no_mangle]
-pub extern "C" fn fst_map_regexsearch(map_ptr: *mut Map, regex_ptr: *mut Regex)
+pub extern "C" fn fst_map_regexsearch(map_ptr: *mut Map, regex_ptr: *mut fst_regex::Regex)
                                       -> *mut MapRegexStream {
     let map = mutref_from_ptr!(map_ptr);
     let regex = ref_from_ptr!(regex_ptr);
