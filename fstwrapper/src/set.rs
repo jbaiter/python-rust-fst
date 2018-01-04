@@ -1,8 +1,4 @@
 extern crate libc;
-extern crate fst;
-extern crate fst_levenshtein;
-extern crate fst_regex;
-
 
 use std::error::Error;
 use std::fs::File;
@@ -10,14 +6,16 @@ use std::io;
 use std::ptr;
 use fst::{IntoStreamer, Streamer, Set, SetBuilder};
 use fst::set;
+use fst_levenshtein::Levenshtein;
+use fst_regex::Regex;
 
 use util::{Context, cstr_to_str, to_raw_ptr};
 
 
 pub type FileSetBuilder = SetBuilder<&'static mut io::BufWriter<File>>;
 pub type MemSetBuilder = SetBuilder<Vec<u8>>;
-pub type SetLevStream = set::Stream<'static, &'static fst_levenshtein::Levenshtein>;
-pub type SetRegexStream = set::Stream<'static, &'static fst_regex::Regex>;
+pub type SetLevStream = set::Stream<'static, &'static Levenshtein>;
+pub type SetRegexStream = set::Stream<'static, &'static Regex>;
 
 
 #[no_mangle]
@@ -121,7 +119,7 @@ pub extern "C" fn fst_set_issuperset(self_ptr: *mut Set, oth_ptr: *mut Set) -> b
 
 #[no_mangle]
 pub extern "C" fn fst_set_levsearch(set_ptr: *mut Set,
-                                    lev_ptr: *mut fst_levenshtein::Levenshtein)
+                                    lev_ptr: *mut Levenshtein)
                                     -> *mut SetLevStream {
     let set = mutref_from_ptr!(set_ptr);
     let lev = ref_from_ptr!(lev_ptr);
@@ -131,7 +129,7 @@ make_free_fn!(fst_set_levstream_free, *mut SetLevStream);
 set_make_next_fn!(fst_set_levstream_next, *mut SetLevStream);
 
 #[no_mangle]
-pub extern "C" fn fst_set_regexsearch(set_ptr: *mut Set, regex_ptr: *mut fst_regex::Regex)
+pub extern "C" fn fst_set_regexsearch(set_ptr: *mut Set, regex_ptr: *mut Regex)
                                       -> *mut SetRegexStream {
     let set = mutref_from_ptr!(set_ptr);
     let regex = ref_from_ptr!(regex_ptr);

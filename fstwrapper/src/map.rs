@@ -1,7 +1,4 @@
 extern crate libc;
-extern crate fst;
-extern crate fst_levenshtein;
-extern crate fst_regex;
 
 use std::error::Error;
 use std::fs::File;
@@ -10,6 +7,8 @@ use std::ptr;
 use fst::{IntoStreamer, Streamer, Map, MapBuilder};
 use fst::map;
 use fst::raw;
+use fst_levenshtein::Levenshtein;
+use fst_regex::Regex;
 
 use util::{Context, str_to_cstr, cstr_to_str, to_raw_ptr};
 
@@ -34,8 +33,8 @@ pub struct MapOpItem {
 
 pub type FileMapBuilder = MapBuilder<&'static mut io::BufWriter<File>>;
 pub type MemMapBuilder = MapBuilder<Vec<u8>>;
-pub type MapLevStream = map::Stream<'static, &'static fst_levenshtein::Levenshtein>;
-pub type MapRegexStream = map::Stream<'static, &'static fst_regex::Regex>;
+pub type MapLevStream = map::Stream<'static, &'static Levenshtein>;
+pub type MapRegexStream = map::Stream<'static, &'static Regex>;
 
 
 #[no_mangle]
@@ -167,7 +166,7 @@ pub extern "C" fn fst_mapvalues_next(ctx: *mut Context, ptr: *mut map::Values) -
 
 #[no_mangle]
 pub extern "C" fn fst_map_levsearch(map_ptr: *mut Map,
-                                    lev_ptr: *mut fst_levenshtein::Levenshtein)
+                                    lev_ptr: *mut Levenshtein)
                                     -> *mut MapLevStream {
     let map = mutref_from_ptr!(map_ptr);
     let lev = ref_from_ptr!(lev_ptr);
@@ -178,7 +177,7 @@ map_make_next_fn!(fst_map_levstream_next, *mut MapLevStream);
 
 
 #[no_mangle]
-pub extern "C" fn fst_map_regexsearch(map_ptr: *mut Map, regex_ptr: *mut fst_regex::Regex)
+pub extern "C" fn fst_map_regexsearch(map_ptr: *mut Map, regex_ptr: *mut Regex)
                                       -> *mut MapRegexStream {
     let map = mutref_from_ptr!(map_ptr);
     let regex = ref_from_ptr!(regex_ptr);

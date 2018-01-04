@@ -3,6 +3,8 @@
 
 extern crate libc;
 extern crate fst;
+extern crate fst_regex;
+extern crate fst_levenshtein;
 
 
 /// Get an immutable reference from a raw pointer
