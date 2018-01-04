@@ -116,7 +116,7 @@ class Map(object):
     A few caveats must be kept in mind:
 
     * Once constructed, a Map can never be modified.
-    * Sets must be built with iterators of lexicographically sorted
+    * Maps must be built with iterators of lexicographically sorted
       (str/unicode, int) tuples, where the integer value must be positive.
     """
 
@@ -301,7 +301,7 @@ class Map(object):
         maps, represented as a tuple of the map index and the value in the
         map.
 
-        :param others:  List of :py:class:`Set` objects
+        :param others:  List of :py:class:`Map` objects
         :returns:       Iterator over all items in all maps in lexicographical
                         order
         """
@@ -346,7 +346,7 @@ class Map(object):
         maps, represented as a tuple of the map index and the value in the
         map.
 
-        :param others:  List of :py:class:`Mapp` objects
+        :param others:  List of :py:class:`Map` objects
         :returns:       Iterator over all items whose key exists in only one of
                         the maps in lexicographical order
         """
