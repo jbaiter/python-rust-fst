@@ -79,10 +79,19 @@ macro_rules! mapop_make_next_fn {
         pub extern fn $name(ptr: $t) -> *const MapOpItem {
             let stream = mutref_from_ptr!(ptr);
             match stream.next() {
-                Some((k, vs)) => to_raw_ptr(
-                    MapOpItem { key: ::std::ffi::CString::new(k).unwrap().into_raw(),
-                                num_values: vs.len(),
-                                values: vs.as_ptr()}),
+                Some((k, vs)) => {
+                    let vals: Vec<CIndexedValue> = (0..vs.len()).map(|idx| {
+                        CIndexedValue { index: vs[idx].index,
+                                        value: vs[idx].value }
+                    }).collect();
+                    let mut vals_boxed: Box<[CIndexedValue]> = vals.into_boxed_slice();
+                    let vals_ptr: *const CIndexedValue = vals_boxed.as_ptr();
+                    mem::forget(vals_boxed);
+                    to_raw_ptr(MapOpItem {
+                        key: ::std::ffi::CString::new(k).unwrap().into_raw(),
+                        num_values: vs.len(),
+                        values: vals_ptr })
+                },
                 None         => ::std::ptr::null_mut()
             }
         }

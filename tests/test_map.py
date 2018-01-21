@@ -92,9 +92,12 @@ def test_map_union():
     b = Map.from_iter({'bar': 32, 'moo': 64})
     u = dict(a.union(b))
     assert len(u) == 3
-    assert u['bar'] == ((0, 8), (1, 32))
-    assert u['baz'] == ((0, 16),)
-    assert u['moo'] == ((1, 64),)
+    bar_itms = [(itm.index, itm.value) for itm in u['bar']]
+    assert bar_itms == [(0, 8), (1, 32)]
+    baz_itms = [(itm.index, itm.value) for itm in u['baz']]
+    assert baz_itms == [(0, 16)]
+    moo_itms = [(itm.index, itm.value) for itm in u['moo']]
+    assert moo_itms == [(1, 64)]
 
 
 def test_map_intersection():

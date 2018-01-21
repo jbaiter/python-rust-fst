@@ -45,8 +45,9 @@ function clean_project {
     # Remove compiled files that might cause conflicts
     pushd /io/
     rm -rf .cache .eggs rust_fst/_ffi.py build *.egg-info
-    find ./ -name "__pycache__" -type d -print0 |xargs rm -rf --
-    find ./ -name "*.pyc" -type f -print0 |xargs rm -rf --
+    find ./ -name "__pycache__" -type d -print0 |xargs -0 rm -rf
+    find ./ -name "*.pyc" -type f -print0 |xargs -0 rm -rf
+    find ./ -name "*.so" -type f -print0 |xargs -0 rm -rf
     popd
 }
 

@@ -84,8 +84,8 @@ class MapOpItemStreamIterator(StreamIterator):
         key = ffi.string(itm.key).decode('utf8')
         values = []
         for n in range(itm.num_values):
-            v = itm.values[n]
-            values.append(IndexedValue(int(v.index), v.value))
+            rust_val = itm.values[n]
+            values.append(IndexedValue(rust_val.index, rust_val.value))
         lib.fst_string_free(itm.key)
         lib.fst_map_opitem_free(itm)
         return (key, tuple(values))

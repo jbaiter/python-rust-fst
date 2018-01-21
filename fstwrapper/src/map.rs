@@ -3,10 +3,10 @@ extern crate libc;
 use std::error::Error;
 use std::fs::File;
 use std::io;
+use std::mem;
 use std::ptr;
 use fst::{IntoStreamer, Streamer, Map, MapBuilder};
 use fst::map;
-use fst::raw;
 use fst_levenshtein::Levenshtein;
 use fst_regex::Regex;
 
@@ -27,9 +27,16 @@ pub struct MapItem {
 pub struct MapOpItem {
     key: *const libc::c_char,
     num_values: libc::size_t,
-    values: *const raw::IndexedValue
+    values: *const CIndexedValue
 }
 
+#[repr(C)]
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct CIndexedValue {
+    index: libc::size_t,
+    value: libc::uint64_t,
+}
 
 pub type FileMapBuilder = MapBuilder<&'static mut io::BufWriter<File>>;
 pub type MemMapBuilder = MapBuilder<Vec<u8>>;
