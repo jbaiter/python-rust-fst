@@ -17,17 +17,14 @@ class StreamIterator(object):
         self._ctx = ctx_ptr
 
     def _free(self):
-        # TODO: We could safely free the structures before the GC does,
-        #       but unfortunately removing GC-callbacks is only supported
-        #       in cffi >= 1.7, which is not yet released.
-
-        # self._free_fn(self._ptr)
-        # # Clear GC hook to prevent double-free
-        # ffi.gc(self._ptr, None)
-        # if self._autom_ptr:
-        #     self._autom_free_fn(self._autom_ptr)
-        #     ffi.gc(self._autom_ptr, None)
-        pass
+        self._free_fn(self._ptr)
+        # Clear GC hook to prevent double-free
+        ffi.gc(self._ptr, None)
+        self._ptr = None
+        if self._autom_ptr:
+            self._autom_free_fn(self._autom_ptr)
+            ffi.gc(self._autom_ptr, None)
+            self._autom_ptr = None
 
     def __iter__(self):
         return self
