@@ -1,12 +1,12 @@
 [package]
 
-name = "fst-wrapper"
+name = "rust_fst"
 version = "0.3.0"
 authors = ["Johannes Baiter <johannes.baiter@gmail.com>"]
 
 [lib]
-name = "fstwrapper"
-crate-type = ["dylib"]
+name = "rust_fst"
+crate-type = ["cdylib"]
 
 [dependencies]
 libc = "0.2"

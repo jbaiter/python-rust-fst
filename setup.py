@@ -1,7 +1,17 @@
 from setuptools import setup
 
-from rust_setuptools import (build_rust_cmdclass, build_install_lib_cmdclass,
-                             RustDistribution)
+
+def build_native(spec):
+    build = spec.add_external_build(
+        cmd=['cargo', 'build', '--release'],
+        path='./rust'
+    )
+    spec.add_cffi_module(
+        module_path='rust_fst._native',
+        dylib=lambda: build.find_dylib('rust_fst', in_path='target/release'),
+        header_filename=lambda: build.find_header('rust_fst.h', in_path='./')
+    )
+
 
 setup(
     name='rust-fst',
@@ -14,18 +24,13 @@ setup(
     keywords=['fst', 'rust', 'levenshtein', 'automata', 'transducer',
               'data_structures'],
     url='https://github.com/jbaiter/python-rust-fst',
-    setup_requires=[
-        'cffi>=1.0.0'],
-    install_requires=['cffi>=1.0.0'],
-    cffi_modules=['rust_fst/_build_ffi.py:ffi'],
     tests_require=['pytest', 'psutil', 'decorator'],
-    distclass=RustDistribution,
-    cmdclass={
-        'build_rust': build_rust_cmdclass([('fstwrapper', 'rust_fst')]),
-        'install_lib': build_install_lib_cmdclass()
-    },
     packages=['rust_fst'],
     zip_safe=False,
+    platforms='any',
+    setup_requires=['milksnake'],
+    install_requires=['milksnake'],
+    milksnake_tasks=[build_native],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',

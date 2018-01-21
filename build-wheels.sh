@@ -7,13 +7,6 @@ function install_rust {
     /tmp/rustup.sh -y --disable-sudo --channel=$1
 }
 
-function update_certificates {
-    # Update the Root CA bundle
-    wget -q --no-check-certificate \
-        -O /etc/pki/tls/certs/ca-bundle.crt \
-        http://curl.haxx.se/ca/cacert.pem
-}
-
 function clean_project {
     # Remove compiled files that might cause conflicts
     pushd /io/
@@ -30,13 +23,10 @@ RUST_CHANNEL=nightly
 # use the oldest supported one
 if [[ $1 == "osx" ]]; then
     brew update
-    brew install mmv
+    brew install
     pip install -U pip setuptools wheel
     install_rust $RUST_CHANNEL
     pip wheel . -w ./wheelhouse
-    mmv "./wheelhouse/rust_fst-*-cp*-cp*-macosx*.whl" \
-        "./wheelhouse/rust_fst-#1-py2.py3-none-macosx#4.whl"
-    pip install cffi
     pip install -v rust_fst --no-index -f ./wheelhouse
     pip install -r "test-requirements.txt"
     cd ../
@@ -51,11 +41,8 @@ else
     # Remove old wheels
     rm -rf /io/wheelhouse/* || echo "No old wheels to delete"
 
-    # We don't support Python 2.6
-    rm -rf /opt/python/cp26*
-
     # Install libraries needed for compiling the extension
-    yum -q -y install libffi-devel mmv
+    yum -q -y install libffi-devel
 
     # Compile wheel
     ${PYBIN}/python -m pip wheel /io/ -w /wheelhouse/
@@ -68,10 +55,6 @@ else
     for whl in /wheelhouse/*.whl; do
         auditwheel repair $whl -w /io/wheelhouse/
     done
-
-    # Rename wheels to match all Python versions
-    mmv "/io/wheelhouse/rust_fst-*-cp*-cp*-manylinux1_*.whl" \
-        "/io/wheelhouse/rust_fst-#1-py2.py3-none-manylinux1_#4.whl"
 
     # Set permissions on wheels
     chmod -R a+rw /io/wheelhouse

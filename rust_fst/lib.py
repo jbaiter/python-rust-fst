@@ -1,7 +1,7 @@
 import os
 import re
 import sys
-from ._ffi import ffi
+from ._native import ffi, lib
 
 
 class FstError(Exception):
@@ -23,23 +23,6 @@ class LevenshteinError(FstError):
 class IoError(FstError):
     pass
 
-
-def find_library():
-    libname = "fstwrapper"
-    if sys.platform == 'win32':
-        prefix = ''
-        suffix = 'dll'
-    elif sys.platform == 'darwin':
-        prefix = 'lib'
-        suffix = 'dylib'
-    else:
-        prefix = 'lib'
-        suffix = 'so'
-    cur_dir = os.path.dirname(__file__)
-    return os.path.join(cur_dir, "{}{}.{}".format(prefix, libname, suffix))
-
-
-lib = ffi.dlopen(find_library())
 
 EXCEPTION_MAP = {
     'std::io::Error': OSError,
