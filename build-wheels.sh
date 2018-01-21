@@ -1,33 +1,6 @@
 #!/bin/bash
 set -e -x
 
-function install_openssl {
-    # Compile and parallel-install a newer OpenSSL version so that curl can
-    # download from the rust servers
-    pushd /usr/src
-    wget -q ftp://ftp.openssl.org/source/openssl-${1}.tar.gz
-    tar xf openssl-${1}.tar.gz
-    cd openssl-${1}
-    ./config --prefix=/opt/openssl shared > /dev/null
-    make > /dev/null
-    make install > /dev/null
-    export LD_LIBRARY_PATH=/opt/openssl/lib:$LD_LIBRARY_PATH
-    popd
-}
-
-function install_curl {
-    pushd /usr/src
-    # Compile an up-to-date curl version that links to our own OpenSSL installation
-    wget -q --no-check-certificate http://curl.haxx.se/download/curl-${1}.tar.gz
-    tar xf curl-${1}.tar.gz
-    cd curl-${1}
-    ./configure --with-ssl=/opt/openssl --prefix=/opt/curl > /dev/null
-    make > /dev/null
-    make install > /dev/null
-    export PATH=/opt/curl/bin:$PATH
-    popd
-}
-
 function install_rust {
     curl https://static.rust-lang.org/rustup.sh > /tmp/rustup.sh
     chmod +x /tmp/rustup.sh
@@ -51,8 +24,6 @@ function clean_project {
     popd
 }
 
-OPENSSL_VERSION=1.0.2n
-CURL_VERSION=7.49.0
 RUST_CHANNEL=nightly
 
 # It doesn't matter with which Python version we build  the wheel, so we
@@ -75,8 +46,6 @@ else
     # Clean build files
     clean_project
 
-    install_openssl $OPENSSL_VERSION
-    install_curl $CURL_VERSION
     install_rust $RUST_CHANNEL
 
     # Remove old wheels
