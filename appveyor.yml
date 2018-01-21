@@ -8,6 +8,8 @@ environment:
 install:
   - SET PYTHON=C:\Python27%PYARCH%
   - "%PYTHON%\\python -m pip install -U pip setuptools wheel"
+  # Install development version of milksnake that fixes Windows dylib discovery
+  - "%PYTHON%\\python -m pip install -U git+https://github.com/getsentry/milksnake"
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:RUST_TARGET}.exe"
   - rust-nightly-%RUST_TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
