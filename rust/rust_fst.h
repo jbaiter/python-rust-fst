@@ -65,6 +65,7 @@ SetLevStream* fst_set_levsearch(Set*, Levenshtein*);
 SetRegexStream* fst_set_regexsearch(Set*, Regex*);
 SetOpBuilder* fst_set_make_opbuilder(Set*);
 SetOpBuilder* fst_set_make_opbuilder_streambuilder(SetStreamBuilder*);
+SetOpBuilder* fst_set_make_opbuilder_levstream(SetLevStream*);
 SetOpBuilder* fst_set_make_opbuilder_union(SetUnion*);
 void fst_set_free(Set*);
 
@@ -78,6 +79,7 @@ char* fst_set_regexstream_next(SetRegexStream*);
 void fst_set_regexstream_free(SetRegexStream*);
 
 void fst_set_opbuilder_push(SetOpBuilder*, Set*);
+void fst_set_opbuilder_push_levstream(SetOpBuilder*, SetLevStream*);
 void fst_set_opbuilder_push_streambuilder(SetOpBuilder*, SetStreamBuilder*);
 void fst_set_opbuilder_push_union(SetOpBuilder*, SetUnion*);
 void fst_set_opbuilder_free(SetOpBuilder*);

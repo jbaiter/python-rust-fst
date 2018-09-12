@@ -60,6 +60,16 @@ class OpBuilderInputType(Enum):
     SET = 1
     STREAM_BUILDER = 2
     UNION = 3
+    SEARCH = 4
+
+
+def _build_levsearch(fst, term, max_dist):
+    lev_ptr = checked_call(
+        lib.fst_levenshtein_new,
+        fst._ctx,
+        ffi.new("char[]", term.encode('utf8')),
+        max_dist)
+    return lib.fst_set_levsearch(fst._ptr, lev_ptr)
 
 
 class OpBuilder(object):
@@ -68,12 +78,21 @@ class OpBuilder(object):
         OpBuilderInputType.SET: lib.fst_set_make_opbuilder,
         OpBuilderInputType.STREAM_BUILDER: lib.fst_set_make_opbuilder_streambuilder,
         OpBuilderInputType.UNION: lib.fst_set_make_opbuilder_union,
+        OpBuilderInputType.SEARCH: lib.fst_set_make_opbuilder_levstream,
     }
     _PUSHERS  =  {
         OpBuilderInputType.SET: lib.fst_set_opbuilder_push,
         OpBuilderInputType.STREAM_BUILDER: lib.fst_set_opbuilder_push_streambuilder,
         OpBuilderInputType.UNION: lib.fst_set_opbuilder_push_union,
+        OpBuilderInputType.SEARCH: lib.fst_set_opbuilder_push_levstream,
     }
+
+    @classmethod
+    def from_search(cls, fst, term, max_dist):
+        stream_ptr = _build_levsearch(fst, term, max_dist)
+        opbuilder = OpBuilder(stream_ptr,
+                              input_type=OpBuilderInputType.SEARCH)
+        return opbuilder
 
     @classmethod
     def from_slice(cls, set_ptr, s):
@@ -499,6 +518,22 @@ class UnionSet(object):
                         sets in lexicographical order
         """
         return self._make_opbuilder(*others).intersection()
+
+    def search(self, term, max_dist):
+        """ Search the set with a Levenshtein automaton.
+
+        :param term:        The search term
+        :param max_dist:    The maximum edit distance for search results
+        :returns:           Iterator over matching values in the set
+        :rtype:             :py:class:`KeyStreamIterator`
+        """
+        if len(self.sets) <= 1:
+            raise ValueError(
+                "Must have more than one set to operate on.")
+        opbuilder = OpBuilder.from_search(self.sets[0], term, max_dist)
+        for fst in self.sets[1:]:
+            opbuilder.push(_build_levsearch(fst, term, max_dist))
+        return opbuilder.union()
 
     def symmetric_difference(self, *others):
         """ Get an iterator over the keys in the symmetric difference of this

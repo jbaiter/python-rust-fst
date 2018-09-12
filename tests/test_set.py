@@ -195,6 +195,11 @@ def test_unionset_range(fst_unionset):
         fst_unionset['c']
 
 
+def test_unionset_search(fst_unionset):
+    matches = list(fst_unionset.search("bam", 1))
+    assert matches == ["bap", "bar", "baz"]
+
+
 def test_unionset_symmetric_difference():
     a = Set.from_iter(["bar", "foo"])
     b = Set.from_iter(["baz", "foo"])
