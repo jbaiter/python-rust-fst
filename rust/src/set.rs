@@ -155,6 +155,14 @@ pub extern "C" fn fst_set_make_opbuilder_levstream(ptr: *mut SetLevStream) -> *m
 }
 
 #[no_mangle]
+pub extern "C" fn fst_set_make_opbuilder_regexstream(ptr: *mut SetRegexStream) -> *mut set::OpBuilder<'static> {
+    let srs = val_from_ptr!(ptr);
+    let mut ob = set::OpBuilder::new();
+    ob.push(srs.into_stream());
+    to_raw_ptr(ob)
+}
+
+#[no_mangle]
 pub extern "C" fn fst_set_make_opbuilder_streambuilder(ptr: *mut set::StreamBuilder<'static>) -> *mut set::OpBuilder<'static> {
     let sb = val_from_ptr!(ptr);
     let mut ob = set::OpBuilder::new();
@@ -182,6 +190,13 @@ pub extern "C" fn fst_set_opbuilder_push_levstream(ptr: *mut set::OpBuilder<'sta
     let sls = val_from_ptr!(sls_ptr);
     let ob = mutref_from_ptr!(ptr);
     ob.push(sls.into_stream());
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_opbuilder_push_regexstream(ptr: *mut set::OpBuilder<'static>, srs_ptr: *mut SetRegexStream) {
+    let srs = val_from_ptr!(srs_ptr);
+    let ob = mutref_from_ptr!(ptr);
+    ob.push(srs.into_stream());
 }
 
 #[no_mangle]

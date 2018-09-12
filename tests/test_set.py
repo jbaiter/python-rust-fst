@@ -200,6 +200,11 @@ def test_unionset_search(fst_unionset):
     assert matches == ["bap", "bar", "baz"]
 
 
+def test_unionset_search_re(fst_unionset):
+    matches = list(fst_unionset.search_re(r'ba.*'))
+    assert matches == ["bap", "bar", "baz"]
+
+
 def test_unionset_symmetric_difference():
     a = Set.from_iter(["bar", "foo"])
     b = Set.from_iter(["baz", "foo"])

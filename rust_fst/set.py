@@ -61,6 +61,7 @@ class OpBuilderInputType(Enum):
     STREAM_BUILDER = 2
     UNION = 3
     SEARCH = 4
+    SEARCH_RE = 5
 
 
 def _build_levsearch(fst, term, max_dist):
@@ -72,6 +73,13 @@ def _build_levsearch(fst, term, max_dist):
     return lib.fst_set_levsearch(fst._ptr, lev_ptr)
 
 
+def _build_research(fst, pattern):
+    re_ptr = checked_call(
+        lib.fst_regex_new, fst._ctx,
+        ffi.new("char[]", pattern.encode('utf8')))
+    return lib.fst_set_regexsearch(fst._ptr, re_ptr)
+
+
 class OpBuilder(object):
 
     _BUILDERS = {
@@ -79,12 +87,14 @@ class OpBuilder(object):
         OpBuilderInputType.STREAM_BUILDER: lib.fst_set_make_opbuilder_streambuilder,
         OpBuilderInputType.UNION: lib.fst_set_make_opbuilder_union,
         OpBuilderInputType.SEARCH: lib.fst_set_make_opbuilder_levstream,
+        OpBuilderInputType.SEARCH_RE: lib.fst_set_make_opbuilder_regexstream,
     }
     _PUSHERS  =  {
         OpBuilderInputType.SET: lib.fst_set_opbuilder_push,
         OpBuilderInputType.STREAM_BUILDER: lib.fst_set_opbuilder_push_streambuilder,
         OpBuilderInputType.UNION: lib.fst_set_opbuilder_push_union,
         OpBuilderInputType.SEARCH: lib.fst_set_opbuilder_push_levstream,
+        OpBuilderInputType.SEARCH_RE: lib.fst_set_opbuilder_push_regexstream,
     }
 
     @classmethod
@@ -92,6 +102,13 @@ class OpBuilder(object):
         stream_ptr = _build_levsearch(fst, term, max_dist)
         opbuilder = OpBuilder(stream_ptr,
                               input_type=OpBuilderInputType.SEARCH)
+        return opbuilder
+
+    @classmethod
+    def from_search_re(cls, fst, pattern):
+        stream_ptr = _build_research(fst, pattern)
+        opbuilder = OpBuilder(stream_ptr,
+                              input_type=OpBuilderInputType.SEARCH_RE)
         return opbuilder
 
     @classmethod
@@ -533,6 +550,38 @@ class UnionSet(object):
         opbuilder = OpBuilder.from_search(self.sets[0], term, max_dist)
         for fst in self.sets[1:]:
             opbuilder.push(_build_levsearch(fst, term, max_dist))
+        return opbuilder.union()
+
+    def search_re(self, pattern):
+        """ Search the set with a regular expression.
+
+        Note that the regular expression syntax is not Python's, but the one
+        supported by the `regex` Rust crate, which is almost identical
+        to the engine of the RE2 engine.
+
+        For a documentation of the syntax, see:
+        http://doc.rust-lang.org/regex/regex/index.html#syntax
+
+        Due to limitations of the underlying FST, only a subset of this syntax
+        is supported. Most notably absent are:
+
+        * Lazy quantifiers (``r'*?'``, ``r'+?'``)
+        * Word boundaries (``r'\\b'``)
+        * Other zero-width assertions (``r'^'``, ``r'$'``)
+
+        For background on these limitations, consult the documentation of
+        the Rust crate: http://burntsushi.net/rustdoc/fst/struct.Regex.html
+
+        :param pattern:     A regular expression
+        :returns:           An iterator over all matching keys in the set
+        :rtype:             :py:class:`KeyStreamIterator`
+        """
+        if len(self.sets) <= 1:
+            raise ValueError(
+                "Must have more than one set to operate on.")
+        opbuilder = OpBuilder.from_search_re(self.sets[0], pattern)
+        for fst in self.sets[1:]:
+            opbuilder.push(_build_research(fst, pattern))
         return opbuilder.union()
 
     def symmetric_difference(self, *others):
