@@ -64,6 +64,7 @@ SetStream* fst_set_stream(Set*);
 SetLevStream* fst_set_levsearch(Set*, Levenshtein*);
 SetRegexStream* fst_set_regexsearch(Set*, Regex*);
 SetOpBuilder* fst_set_make_opbuilder(Set*);
+SetOpBuilder* fst_set_make_opbuilder_streambuilder(SetStreamBuilder*);
 void fst_set_free(Set*);
 
 char* fst_set_stream_next(SetStream*);
@@ -76,6 +77,7 @@ char* fst_set_regexstream_next(SetRegexStream*);
 void fst_set_regexstream_free(SetRegexStream*);
 
 void fst_set_opbuilder_push(SetOpBuilder*, Set*);
+void fst_set_opbuilder_push_streambuilder(SetOpBuilder*, SetStreamBuilder*);
 void fst_set_opbuilder_free(SetOpBuilder*);
 SetUnion* fst_set_opbuilder_union(SetOpBuilder*);
 SetIntersection* fst_set_opbuilder_intersection(SetOpBuilder*);
@@ -97,6 +99,8 @@ void fst_set_symmetricdifference_free(SetSymmetricDifference*);
 
 SetStreamBuilder* fst_set_streambuilder_new(Set*);
 SetStreamBuilder* fst_set_streambuilder_add_ge(SetStreamBuilder*, char*);
+SetStreamBuilder* fst_set_streambuilder_add_gt(SetStreamBuilder*, char*);
+SetStreamBuilder* fst_set_streambuilder_add_le(SetStreamBuilder*, char*);
 SetStreamBuilder* fst_set_streambuilder_add_lt(SetStreamBuilder*, char*);
 SetStream* fst_set_streambuilder_finish(SetStreamBuilder*);
 

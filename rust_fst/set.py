@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from enum import Enum
 
 from .common import KeyStreamIterator
 from .lib import ffi, lib, checked_call
@@ -55,14 +56,40 @@ class MemSetBuilder(SetBuilder):
         return Set(None, _pointer=self._set_ptr)
 
 
+class OpBuilderInputType(Enum):
+    SET = 1
+    STREAM_BUILDER = 2
+
+
 class OpBuilder(object):
-    def __init__(self, set_ptr):
+
+    _BUILDERS = {
+        OpBuilderInputType.SET: lib.fst_set_make_opbuilder,
+        OpBuilderInputType.STREAM_BUILDER: lib.fst_set_make_opbuilder_streambuilder,
+    }
+    _PUSHERS  =  {
+        OpBuilderInputType.SET: lib.fst_set_opbuilder_push,
+        OpBuilderInputType.STREAM_BUILDER: lib.fst_set_opbuilder_push_streambuilder,
+    }
+
+    @classmethod
+    def from_slice(cls, set_ptr, s):
+        sb = StreamBuilder.from_slice(set_ptr, s)
+        opbuilder = OpBuilder(sb._ptr,
+                              input_type=OpBuilderInputType.STREAM_BUILDER)
+        return opbuilder
+
+    def __init__(self, ptr, input_type=OpBuilderInputType.SET):
+        if input_type not in self._BUILDERS:
+            raise ValueError(
+                "input_type must be a member of OpBuilderInputType.")
+        self._input_type = input_type
         # NOTE: No need for `ffi.gc`, since the struct will be free'd
         #       once we call union/intersection/difference
-        self._ptr = lib.fst_set_make_opbuilder(set_ptr)
+        self._ptr = OpBuilder._BUILDERS[self._input_type](ptr)
 
-    def push(self, set_ptr):
-        lib.fst_set_opbuilder_push(self._ptr, set_ptr)
+    def push(self, ptr):
+        OpBuilder._PUSHERS[self._input_type](self._ptr, ptr)
 
     def union(self):
         stream_ptr = lib.fst_set_opbuilder_union(self._ptr)
@@ -84,6 +111,44 @@ class OpBuilder(object):
         return KeyStreamIterator(stream_ptr,
                                  lib.fst_set_symmetricdifference_next,
                                  lib.fst_set_symmetricdifference_free)
+
+
+class StreamBuilder(object):
+
+    @classmethod
+    def from_slice(cls, set_ptr, slice_bounds):
+        sb = StreamBuilder(set_ptr)
+        if slice_bounds.start:
+            sb.ge(slice_bounds.start)
+        if slice_bounds.stop:
+            sb.lt(slice_bounds.stop)
+        return sb
+
+    def __init__(self, set_ptr):
+        # NOTE: No need for `ffi.gc`, since the struct will be free'd
+        #       once we call union/intersection/difference
+        self._ptr = lib.fst_set_streambuilder_new(set_ptr)
+
+    def finish(self):
+        stream_ptr = lib.fst_set_streambuilder_finish(self._ptr)
+        return KeyStreamIterator(stream_ptr, lib.fst_set_stream_next,
+                                 lib.fst_set_stream_free)
+
+    def ge(self, bound):
+        c_start = ffi.new("char[]", bound.encode('utf8'))
+        self._ptr = lib.fst_set_streambuilder_add_ge(self._ptr, c_start)
+
+    def gt(self, bound):
+        c_start = ffi.new("char[]", bound.encode('utf8'))
+        self._ptr = lib.fst_set_streambuilder_add_gt(self._ptr, c_start)
+
+    def le(self, bound):
+        c_end = ffi.new("char[]", bound.encode('utf8'))
+        self._ptr = lib.fst_set_streambuilder_add_le(self._ptr, c_end)
+
+    def lt(self, bound):
+        c_end = ffi.new("char[]", bound.encode('utf8'))
+        self._ptr = lib.fst_set_streambuilder_add_lt(self._ptr, c_end)
 
 
 class Set(object):
@@ -203,19 +268,11 @@ class Set(object):
         if s.start and s.stop and s.start > s.stop:
             raise ValueError(
                 "Start key must be lexicographically smaller than stop.")
-        sb_ptr = lib.fst_set_streambuilder_new(self._ptr)
-        if s.start:
-            c_start = ffi.new("char[]", s.start.encode('utf8'))
-            sb_ptr = lib.fst_set_streambuilder_add_ge(sb_ptr, c_start)
-        if s.stop:
-            c_stop = ffi.new("char[]", s.stop.encode('utf8'))
-            sb_ptr = lib.fst_set_streambuilder_add_lt(sb_ptr, c_stop)
-        stream_ptr = lib.fst_set_streambuilder_finish(sb_ptr)
-        return KeyStreamIterator(stream_ptr, lib.fst_set_stream_next,
-                                 lib.fst_set_stream_free)
+        sb = StreamBuilder.from_slice(self._ptr, s)
+        return sb.finish()
 
     def _make_opbuilder(self, *others):
-        opbuilder = OpBuilder(self._ptr)
+        opbuilder = OpBuilder(self._ptr, input_type=OpBuilderInputType.SET)
         for oth in others:
             opbuilder.push(oth._ptr)
         return opbuilder
@@ -333,3 +390,65 @@ class Set(object):
         return KeyStreamIterator(stream_ptr, lib.fst_set_levstream_next,
                                  lib.fst_set_levstream_free, lev_ptr,
                                  lib.fst_levenshtein_free)
+
+
+class UnionSet(object):
+    """ A collection of Set objects that offer efficient operations across all
+    members.
+    """
+    def __init__(self, *sets):
+        self.sets = list(sets)
+
+    def __contains__(self, val):
+        """ Check if the set contains the value. """
+        return any([
+            lib.fst_set_contains(fst._ptr,
+                                 ffi.new("char[]",
+                                         val.encode('utf8')))
+            for fst in self.sets
+        ])
+
+    def __getitem__(self, s):
+        """ Get an iterator over a range of set contents.
+
+        Start and stop indices of the slice must be unicode strings.
+
+        .. important::
+            Slicing follows the semantics for numerical indices, i.e. the
+            `stop` value is **exclusive**. For example, given the set
+            `s = Set.from_iter(["bar", "baz", "foo", "moo"])`, `s['b': 'f']`
+            will only return `"bar"` and `"baz"`.
+
+        :param s:   A slice that specifies the range of the set to retrieve
+        :type s:    :py:class:`slice`
+        """
+        if not isinstance(s, slice):
+            raise ValueError(
+                "Value must be a string slice (e.g. `['foo':]`)")
+        if s.start and s.stop and s.start > s.stop:
+            raise ValueError(
+                "Start key must be lexicographically smaller than stop.")
+        if len(self.sets) <= 1:
+            raise ValueError(
+                "Must have more than one set to operate on.")
+
+        opbuilder = OpBuilder.from_slice(self.sets[0]._ptr, s)
+        streams = []
+        for fst in self.sets[1:]:
+            sb = StreamBuilder.from_slice(fst._ptr, s)
+            streams.append(sb)
+        for sb in streams:
+            opbuilder.push(sb._ptr)
+        return opbuilder.union()
+
+    def __iter__(self):
+        """ Get an iterator over all keys in all sets in lexicographical order.
+        """
+        if len(self.sets) <= 1:
+            raise ValueError(
+                "Must have more than one set to operate on.")
+        opbuilder = OpBuilder(self.sets[0]._ptr,
+                              input_type=OpBuilderInputType.SET)
+        for fst in self.sets[1:]:
+            opbuilder.push(fst._ptr)
+        return opbuilder.union()
