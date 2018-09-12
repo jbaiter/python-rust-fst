@@ -166,6 +166,20 @@ def test_unionset_contains(fst_unionset):
         assert key in fst_unionset
 
 
+def test_unionset_difference():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).difference(c)) == ["bar", "baz"]
+
+
+def test_unionset_intersection():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).intersection(c)) == ["foo"]
+
+
 def test_unionset_iter(fst_unionset):
     stored_keys = list(fst_unionset)
     assert stored_keys == sorted(set(TEST_KEYS+TEST_KEYS2))
@@ -179,3 +193,17 @@ def test_unionset_range(fst_unionset):
         fst_unionset['c':'a']
     with pytest.raises(ValueError):
         fst_unionset['c']
+
+
+def test_unionset_symmetric_difference():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).symmetric_difference(c)) == ["bar", "baz", "bonk"]
+
+
+def test_unionset_union():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).union(c)) == ["bar", "baz", "bonk", "foo"]

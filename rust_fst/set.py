@@ -59,6 +59,7 @@ class MemSetBuilder(SetBuilder):
 class OpBuilderInputType(Enum):
     SET = 1
     STREAM_BUILDER = 2
+    UNION = 3
 
 
 class OpBuilder(object):
@@ -66,10 +67,12 @@ class OpBuilder(object):
     _BUILDERS = {
         OpBuilderInputType.SET: lib.fst_set_make_opbuilder,
         OpBuilderInputType.STREAM_BUILDER: lib.fst_set_make_opbuilder_streambuilder,
+        OpBuilderInputType.UNION: lib.fst_set_make_opbuilder_union,
     }
     _PUSHERS  =  {
         OpBuilderInputType.SET: lib.fst_set_opbuilder_push,
         OpBuilderInputType.STREAM_BUILDER: lib.fst_set_opbuilder_push_streambuilder,
+        OpBuilderInputType.UNION: lib.fst_set_opbuilder_push_union,
     }
 
     @classmethod
@@ -452,3 +455,66 @@ class UnionSet(object):
         for fst in self.sets[1:]:
             opbuilder.push(fst._ptr)
         return opbuilder.union()
+
+    def _make_opbuilder(self, *others):
+        others = list(others)
+        if len(self.sets) <= 1:
+            raise ValueError(
+                "Must have more than one set to operate on.")
+        if not others:
+            raise ValueError(
+                "Must have at least one set to compare against.")
+        our_opbuilder = OpBuilder(self.sets[0]._ptr,
+                                  input_type=OpBuilderInputType.SET)
+        for fst in self.sets[1:]:
+            our_opbuilder.push(fst._ptr)
+        our_stream = lib.fst_set_opbuilder_union(our_opbuilder._ptr)
+
+        their_opbuilder = OpBuilder(others.pop()._ptr,
+                                    input_type=OpBuilderInputType.SET)
+        for fst in others:
+            their_opbuilder.push(fst._ptr)
+        their_stream = lib.fst_set_opbuilder_union(their_opbuilder._ptr)
+
+        opbuilder = OpBuilder(our_stream, input_type=OpBuilderInputType.UNION)
+        opbuilder.push(their_stream)
+        return opbuilder
+
+    def difference(self, *others):
+        """ Get an iterator over the keys in the difference of this set and
+            others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys that exists in this set, but in
+                        none of the other sets, in lexicographical order
+        """
+        return self._make_opbuilder(*others).difference()
+
+    def intersection(self, *others):
+        """ Get an iterator over the keys in the intersection of this set and
+            others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys that exists in all of the passed
+                        sets in lexicographical order
+        """
+        return self._make_opbuilder(*others).intersection()
+
+    def symmetric_difference(self, *others):
+        """ Get an iterator over the keys in the symmetric difference of this
+            set and others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys that exists in only one of the
+                        sets in lexicographical order
+        """
+        return self._make_opbuilder(*others).symmetric_difference()
+
+    def union(self, *others):
+        """ Get an iterator over the keys in the union of this set and others.
+
+        :param others:  List of :py:class:`Set` objects
+        :returns:       Iterator over all keys in all sets in lexicographical
+                        order
+        """
+        return self._make_opbuilder(*others).union()

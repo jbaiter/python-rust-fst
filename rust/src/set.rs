@@ -155,6 +155,14 @@ pub extern "C" fn fst_set_make_opbuilder_streambuilder(ptr: *mut set::StreamBuil
 }
 
 #[no_mangle]
+pub extern "C" fn fst_set_make_opbuilder_union(ptr: *mut set::Union<'static>) -> *mut set::OpBuilder<'static> {
+    let union = val_from_ptr!(ptr);
+    let mut ob = set::OpBuilder::new();
+    ob.push(union.into_stream());
+    to_raw_ptr(ob)
+}
+
+#[no_mangle]
 pub extern "C" fn fst_set_opbuilder_push(ptr: *mut set::OpBuilder, set_ptr: *mut Set) {
     let set = ref_from_ptr!(set_ptr);
     let ob = mutref_from_ptr!(ptr);
@@ -166,6 +174,13 @@ pub extern "C" fn fst_set_opbuilder_push_streambuilder(ptr: *mut set::OpBuilder<
     let sb = val_from_ptr!(sb_ptr);
     let ob = mutref_from_ptr!(ptr);
     ob.push(sb.into_stream());
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_opbuilder_push_union(ptr: *mut set::OpBuilder<'static>, union_ptr: *mut set::Union<'static>) {
+    let union = val_from_ptr!(union_ptr);
+    let ob = mutref_from_ptr!(ptr);
+    ob.push(union.into_stream());
 }
 
 #[no_mangle]
