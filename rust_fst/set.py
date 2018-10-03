@@ -467,10 +467,9 @@ class UnionSet(object):
         if s.start and s.stop and s.start > s.stop:
             raise ValueError(
                 "Start key must be lexicographically smaller than stop.")
-        if len(self.sets) <= 1:
-            raise ValueError(
-                "Must have more than one set to operate on.")
 
+        if not self.sets:
+            return
         opbuilder = OpBuilder.from_slice(self.sets[0]._ptr, s)
         streams = []
         for fst in self.sets[1:]:
@@ -483,9 +482,8 @@ class UnionSet(object):
     def __iter__(self):
         """ Get an iterator over all keys in all sets in lexicographical order.
         """
-        if len(self.sets) <= 1:
-            raise ValueError(
-                "Must have more than one set to operate on.")
+        if not self.sets:
+            return
         opbuilder = OpBuilder(self.sets[0]._ptr,
                               input_type=OpBuilderInputType.SET)
         for fst in self.sets[1:]:
@@ -494,12 +492,11 @@ class UnionSet(object):
 
     def _make_opbuilder(self, *others):
         others = list(others)
-        if len(self.sets) <= 1:
-            raise ValueError(
-                "Must have more than one set to operate on.")
         if not others:
             raise ValueError(
                 "Must have at least one set to compare against.")
+        if not self.sets:
+            return
         our_opbuilder = OpBuilder(self.sets[0]._ptr,
                                   input_type=OpBuilderInputType.SET)
         for fst in self.sets[1:]:
@@ -544,9 +541,8 @@ class UnionSet(object):
         :returns:           Iterator over matching values in the set
         :rtype:             :py:class:`KeyStreamIterator`
         """
-        if len(self.sets) <= 1:
-            raise ValueError(
-                "Must have more than one set to operate on.")
+        if not self.sets:
+            return
         opbuilder = OpBuilder.from_search(self.sets[0], term, max_dist)
         for fst in self.sets[1:]:
             opbuilder.push(_build_levsearch(fst, term, max_dist))
@@ -576,9 +572,8 @@ class UnionSet(object):
         :returns:           An iterator over all matching keys in the set
         :rtype:             :py:class:`KeyStreamIterator`
         """
-        if len(self.sets) <= 1:
-            raise ValueError(
-                "Must have more than one set to operate on.")
+        if not self.sets:
+            return
         opbuilder = OpBuilder.from_search_re(self.sets[0], pattern)
         for fst in self.sets[1:]:
             opbuilder.push(_build_research(fst, pattern))
