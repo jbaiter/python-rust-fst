@@ -1,15 +1,21 @@
+import platform
+
 from setuptools import setup
+
+# The AppVeyor build doesn't use rustup, so we run cargo directly there
+if platform.system() == 'Windows':
+    BUILD_CMD = ['cargo', 'build', '--release']
+else:
+    BUILD_CMD = ['rustup', 'run', 'nightly', 'cargo', 'build', '--release']
 
 
 def build_native(spec):
-    build = spec.add_external_build(
-        cmd=['cargo', 'build', '--release'],
-        path='./rust'
-    )
+    build = spec.add_external_build(cmd=BUILD_CMD, path='./rust')
     spec.add_cffi_module(
         module_path='rust_fst._native',
         dylib=lambda: build.find_dylib('rust_fst', in_path='target/release'),
-        header_filename=lambda: build.find_header('rust_fst.h', in_path='./')
+        header_filename=lambda: build.find_header('rust_fst.h', in_path='./'),
+        rtld_flags=['NOW', 'NODELETE']
     )
 
 

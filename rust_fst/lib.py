@@ -25,12 +25,12 @@ class IoError(FstError):
 
 
 EXCEPTION_MAP = {
-    'std::io::Error': OSError,
-    'fst::Error': FstError,
-    'fst::Error::Fst': TransducerError,
-    'fst_regex::Error': RegexError,
-    'fst_levenshtein::Error': LevenshteinError,
-    'fst::Error::Io': IoError,
+    'std::io::error::Error': OSError,
+    'fst::error::Error': FstError,
+    'fst::error::Error::Fst': TransducerError,
+    'fst_regex::error::Error': RegexError,
+    'fst_levenshtein::error::Error': LevenshteinError,
+    'fst::error::Error::Io': IoError,
     'py::KeyError': KeyError
 }
 

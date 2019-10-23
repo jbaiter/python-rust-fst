@@ -10,6 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 libc = "0.2"
-fst = "^0.3.0"
-fst-levenshtein = "^0.2.0"
-fst-regex = "^0.2.0"
+fst = "^0.3.5"
+fst-levenshtein = "^0.2.1"
+fst-regex = "^0.2.2"

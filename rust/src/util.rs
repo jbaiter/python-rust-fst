@@ -92,7 +92,7 @@ make_free_fn!(fst_bufwriter_free, *mut io::BufWriter<File>);
 #[no_mangle]
 pub extern "C" fn fst_levenshtein_new(ctx: *mut Context,
                                       c_key: *mut libc::c_char,
-                                      max_dist: libc::uint32_t)
+                                      max_dist: u32)
                                       -> *mut Levenshtein {
     let key = cstr_to_str(c_key);
     let lev = with_context!(ctx, ptr::null_mut(),

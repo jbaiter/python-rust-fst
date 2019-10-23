@@ -18,7 +18,7 @@ use util::{Context, str_to_cstr, cstr_to_str, to_raw_ptr};
 #[allow(dead_code)]
 pub struct MapItem {
     key: *const libc::c_char,
-    value: libc::uint64_t,
+    value: u64,
 }
 
 #[repr(C)]
@@ -35,7 +35,7 @@ pub struct MapOpItem {
 #[allow(dead_code)]
 pub struct CIndexedValue {
     index: libc::size_t,
-    value: libc::uint64_t,
+    value: u64,
 }
 
 pub type FileMapBuilder = MapBuilder<&'static mut io::BufWriter<File>>;
@@ -57,7 +57,7 @@ pub extern "C" fn fst_filemapbuilder_new(ctx: *mut Context,
 pub extern "C" fn fst_filemapbuilder_insert(ctx: *mut Context,
                                             ptr: *mut FileMapBuilder,
                                             key: *mut libc::c_char,
-                                            val: libc::uint64_t)
+                                            val: u64)
                                             -> bool {
     let builder = mutref_from_ptr!(ptr);
     with_context!(ctx, false, builder.insert(cstr_to_str(key), val));
@@ -80,7 +80,7 @@ pub extern "C" fn fst_memmapbuilder_new() -> *mut MemMapBuilder {
 pub extern "C" fn fst_memmapbuilder_insert(ctx: *mut Context,
                                            ptr: *mut MemMapBuilder,
                                            key: *mut libc::c_char,
-                                           val: libc::uint64_t)
+                                           val: u64)
                                            -> bool {
     let builder = mutref_from_ptr!(ptr);
     with_context!(ctx, false, builder.insert(cstr_to_str(key), val));
@@ -126,7 +126,7 @@ make_free_fn!(fst_mapitem_free, *mut MapItem);
 pub extern "C" fn fst_map_get(ctx: *mut Context,
                               ptr: *mut Map,
                               key: *mut libc::c_char)
-                              -> libc::uint64_t {
+                              -> u64 {
     let key = cstr_to_str(key);
     let ctx = mutref_from_ptr!(ctx);
     ctx.clear();
@@ -156,7 +156,7 @@ pub extern "C" fn fst_map_values(ptr: *mut Map) -> *mut map::Values<'static> {
 make_free_fn!(fst_mapvalues_free, *mut map::Values);
 
 #[no_mangle]
-pub extern "C" fn fst_mapvalues_next(ctx: *mut Context, ptr: *mut map::Values) -> libc::uint64_t {
+pub extern "C" fn fst_mapvalues_next(ctx: *mut Context, ptr: *mut map::Values) -> u64 {
     let ctx = mutref_from_ptr!(ctx);
     ctx.clear();
     match mutref_from_ptr!(ptr).next() {
