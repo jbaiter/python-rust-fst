@@ -147,10 +147,70 @@ pub extern "C" fn fst_set_make_opbuilder(ptr: *mut Set) -> *mut set::OpBuilder<'
 make_free_fn!(fst_set_opbuilder_free, *mut set::OpBuilder);
 
 #[no_mangle]
+pub extern "C" fn fst_set_make_opbuilder_levstream(ptr: *mut SetLevStream) -> *mut set::OpBuilder<'static> {
+    let sls = val_from_ptr!(ptr);
+    let mut ob = set::OpBuilder::new();
+    ob.push(sls.into_stream());
+    to_raw_ptr(ob)
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_make_opbuilder_regexstream(ptr: *mut SetRegexStream) -> *mut set::OpBuilder<'static> {
+    let srs = val_from_ptr!(ptr);
+    let mut ob = set::OpBuilder::new();
+    ob.push(srs.into_stream());
+    to_raw_ptr(ob)
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_make_opbuilder_streambuilder(ptr: *mut set::StreamBuilder<'static>) -> *mut set::OpBuilder<'static> {
+    let sb = val_from_ptr!(ptr);
+    let mut ob = set::OpBuilder::new();
+    ob.push(sb.into_stream());
+    to_raw_ptr(ob)
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_make_opbuilder_union(ptr: *mut set::Union<'static>) -> *mut set::OpBuilder<'static> {
+    let union = val_from_ptr!(ptr);
+    let mut ob = set::OpBuilder::new();
+    ob.push(union.into_stream());
+    to_raw_ptr(ob)
+}
+
+#[no_mangle]
 pub extern "C" fn fst_set_opbuilder_push(ptr: *mut set::OpBuilder, set_ptr: *mut Set) {
     let set = ref_from_ptr!(set_ptr);
     let ob = mutref_from_ptr!(ptr);
     ob.push(set);
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_opbuilder_push_levstream(ptr: *mut set::OpBuilder<'static>, sls_ptr: *mut SetLevStream) {
+    let sls = val_from_ptr!(sls_ptr);
+    let ob = mutref_from_ptr!(ptr);
+    ob.push(sls.into_stream());
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_opbuilder_push_regexstream(ptr: *mut set::OpBuilder<'static>, srs_ptr: *mut SetRegexStream) {
+    let srs = val_from_ptr!(srs_ptr);
+    let ob = mutref_from_ptr!(ptr);
+    ob.push(srs.into_stream());
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_opbuilder_push_streambuilder(ptr: *mut set::OpBuilder<'static>, sb_ptr: *mut set::StreamBuilder<'static>) {
+    let sb = val_from_ptr!(sb_ptr);
+    let ob = mutref_from_ptr!(ptr);
+    ob.push(sb.into_stream());
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_opbuilder_push_union(ptr: *mut set::OpBuilder<'static>, union_ptr: *mut set::Union<'static>) {
+    let union = val_from_ptr!(union_ptr);
+    let ob = mutref_from_ptr!(ptr);
+    ob.push(union.into_stream());
 }
 
 #[no_mangle]
@@ -203,6 +263,22 @@ pub extern "C" fn fst_set_streambuilder_add_ge(ptr: *mut set::StreamBuilder<'sta
                                                -> *mut set::StreamBuilder<'static> {
     let sb = val_from_ptr!(ptr);
     to_raw_ptr(sb.ge(cstr_to_str(c_bound)))
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_streambuilder_add_gt(ptr: *mut set::StreamBuilder<'static>,
+                                               c_bound: *mut libc::c_char)
+                                               -> *mut set::StreamBuilder<'static> {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.gt(cstr_to_str(c_bound)))
+}
+
+#[no_mangle]
+pub extern "C" fn fst_set_streambuilder_add_le(ptr: *mut set::StreamBuilder<'static>,
+                                               c_bound: *mut libc::c_char)
+                                               -> *mut set::StreamBuilder<'static> {
+    let sb = val_from_ptr!(ptr);
+    to_raw_ptr(sb.le(cstr_to_str(c_bound)))
 }
 
 #[no_mangle]

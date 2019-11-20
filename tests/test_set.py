@@ -2,10 +2,11 @@
 import pytest
 
 import rust_fst.lib as lib
-from rust_fst import Set
+from rust_fst import Set, UnionSet
 
 
 TEST_KEYS = [u"möö", "bar", "baz", "foo"]
+TEST_KEYS2 = ["bing", "baz", "bap", "foo"]
 
 
 def do_build(path, keys=TEST_KEYS, sorted_=True):
@@ -19,6 +20,17 @@ def fst_set(tmpdir):
     fst_path = str(tmpdir.join('test.fst'))
     do_build(fst_path)
     return Set(fst_path)
+
+
+@pytest.fixture
+def fst_unionset(tmpdir):
+    fst_path1 = str(tmpdir.join('test1.fst'))
+    fst_path2 = str(tmpdir.join('test2.fst'))
+    do_build(fst_path1, keys=TEST_KEYS)
+    do_build(fst_path2, keys=TEST_KEYS2)
+    a = Set(fst_path1)
+    b = Set(fst_path2)
+    return UnionSet(a, b)
 
 
 def test_build(tmpdir):
@@ -147,3 +159,61 @@ def test_range(fst_set):
         fst_set['c':'a']
     with pytest.raises(ValueError):
         fst_set['c']
+
+
+def test_unionset_contains(fst_unionset):
+    for key in TEST_KEYS+TEST_KEYS2:
+        assert key in fst_unionset
+
+
+def test_unionset_difference():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).difference(c)) == ["bar", "baz"]
+
+
+def test_unionset_intersection():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).intersection(c)) == ["foo"]
+
+
+def test_unionset_iter(fst_unionset):
+    stored_keys = list(fst_unionset)
+    assert stored_keys == sorted(set(TEST_KEYS+TEST_KEYS2))
+
+
+def test_unionset_range(fst_unionset):
+    assert list(fst_unionset['f':]) == ['foo', u'möö']
+    assert list(fst_unionset[:'m']) == ['bap', 'bar', 'baz', 'bing', 'foo']
+    assert list(fst_unionset['baz':'m']) == ['baz', 'bing', 'foo']
+    with pytest.raises(ValueError):
+        fst_unionset['c':'a']
+    with pytest.raises(ValueError):
+        fst_unionset['c']
+
+
+def test_unionset_search(fst_unionset):
+    matches = list(fst_unionset.search("bam", 1))
+    assert matches == ["bap", "bar", "baz"]
+
+
+def test_unionset_search_re(fst_unionset):
+    matches = list(fst_unionset.search_re(r'ba.*'))
+    assert matches == ["bap", "bar", "baz"]
+
+
+def test_unionset_symmetric_difference():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).symmetric_difference(c)) == ["bar", "baz", "bonk"]
+
+
+def test_unionset_union():
+    a = Set.from_iter(["bar", "foo"])
+    b = Set.from_iter(["baz", "foo"])
+    c = Set.from_iter(["bonk", "foo"])
+    assert list(UnionSet(a, b).union(c)) == ["bar", "baz", "bonk", "foo"]

@@ -41,7 +41,6 @@ package.
 ## Status
 The package exposes almost all functionality of the `fst` crate, except for:
 
-- Combining the results of slicing, `search` and `search_re` with set operations
 - Using raw transducers
 
 
@@ -83,6 +82,24 @@ m = Map.from_iter( file_iterator('/your/input/file/'), '/your/mmapped/output.fst
 
 # re-open a file you built previously with from_iter()
 m = Map(path='/path/to/existing.fst')
+
+# slicing multiple sets efficiently
+a = Set.from_iter(["bar", "foo"])
+b = Set.from_iter(["baz", "foo"])
+list(UnionSet(a, b)['ba':'bb'])
+['bar', 'baz']
+
+# searching multiple sets efficiently
+a = Set.from_iter(["bar", "foo"])
+b = Set.from_iter(["baz", "foo"])
+list(UnionSet(a, b).search('ba', 1)
+['bar', 'baz']
+
+# searching multiple sets with a regex efficiently
+a = Set.from_iter(["bar", "foo"])
+b = Set.from_iter(["baz", "foo"])
+list(UnionSet(a, b).search_re(r'b\w{2}')
+['bar', 'baz']
 ```
 
 
